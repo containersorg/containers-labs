@@ -1,6 +1,26 @@
 = containers-labs
 
-This repository contains example projects designed as laboratory exercises for the 'Containers and Microservices' course at Collin College.
+This repository contains the example project designed as laboratory exercises for the 'Containers and Microservices' course at Collin College.
+
+The structure of the repository divided by multiple branches, each branch corresponds to a specific lab exercise.
+
+[%header,cols="^1,3",align="center",stripes="even",width="75%"]
+|===
+| Branch Name   | Description
+| main          | Main branch containing the general README and tools
+| lab-01        | Building a monolithic application
+| lab-02        | Converting the monolithic application to microservices
+| lab-03        | Running microservices with in containers (manual approach)
+| lab-04        | Creating multiple images from running containers
+| lab-05        | Improving with a single image from running containers
+| lab-06        | Automating container builds with Containerfiles
+| lab-07        | Adding persistent storage to containers
+| lab-08        | Isolating containers with networks
+| lab-09        | Troubleshooting and debugging containers and adding health checks
+| lab-10        | Securing the application
+| lab-11        | Orchestrating containers with Podman Compose
+| lab-12        | Deploying in a Kubernetes cluster
+|===
 
 image::images/podman.png[align="center"]
 

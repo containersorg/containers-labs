@@ -7,8 +7,8 @@
 
   vars:
     username: "{{ lookup('env', 'SUDO_USER') }}"
-    rpmfusion: "https://download1.rpmfusion.org"
-    repo_path: "https://raw.githubusercontent.com/jmedinar/testchecker/refs/heads/main/"
+    rpmfusion: https://download1.rpmfusion.org
+    repo_path: https://raw.githubusercontent.com/jmedinar/testchecker/refs/heads/main/
     wallpapers_linux:
       - linux-8k-ultra-hd-art_bWVnaGmUmZqaraWkpJRmZWdpZa1qbGtm.jpg
       - linux-os-bw_Z2hraG6UmZqaraWkpJRma2VlrWZnZWU.jpg
@@ -52,6 +52,8 @@
             name: rpmfusion-*-release
             state: present
 
+      rescue: []
+
     - name: Installing packages for complete desktop
       tags: desktop_packages
       block:
@@ -77,6 +79,8 @@
               - gstreamer1-plugins-base-*
               - gstreamer1-plugins-good-*
               - gstreamer1-plugins-bad-*
+
+      rescue: []
 
     - name: Installing packages for containers
       tags: container_packages
@@ -121,8 +125,8 @@
           ansible.builtin.copy:
             dest: /etc/vimrc.local
             mode: "0644"
-            owner: "root"
-            group: "root"
+            owner: root
+            group: root
             content: |
               syntax on
               set nocompatible
@@ -158,6 +162,8 @@
               let mapleader = ","
             force: false
 
+      rescue: []
+
     - name: Configure Security
       tags: security
       block:
@@ -190,13 +196,15 @@
 
         - name: Set the hostname on Fedora
           ansible.builtin.hostname:
-            name: "fedora"
+            name: fedora
 
         - name: Enable SSH Service
           ansible.builtin.service:
             name: sshd
             state: started
             enabled: true
+
+      rescue: []
 
     - name: Configure Cockpit
       become: true
@@ -229,6 +237,8 @@
             state: absent
             line: root
 
+      rescue: []
+
     - name: Configure Look & Feel
       tags: looks
       block:
@@ -256,7 +266,7 @@
         - name: Download Terminator Configuration
           ansible.builtin.get_url:
             url: https://raw.githubusercontent.com/jmedinar/testchecker/refs/heads/main/config
-            dest: "/etc/xdg/terminator/config"
+            dest: /etc/xdg/terminator/config
             mode: '0666'
             owner: root
             group: root
@@ -272,7 +282,7 @@
             gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{{ custom0 }} command 'terminator'
             gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{{ custom0 }} binding '<Super>t'
           environment:
-            DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+            DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
           changed_when: false
 
         - name: Set keybindings
@@ -284,7 +294,7 @@
             gsettings set org.gnome.settings-daemon.plugins.media-keys control-center "['<Super>s']"
             gsettings set org.gnome.settings-daemon.plugins.media-keys search "['<Super>f']"
           environment:
-            DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+            DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
           changed_when: false
 
         - name: Set Window Icons Preferences
@@ -293,7 +303,7 @@
           ansible.builtin.shell: |
             gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close'
           environment:
-            DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+            DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
           changed_when: false
 
         - name: Set Idle Delay Preferences
@@ -302,8 +312,10 @@
           ansible.builtin.shell: |
             gsettings set org.gnome.desktop.session idle-delay 0
           environment:
-            DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+            DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
           changed_when: false
+
+      rescue: []
 
     - name: Configure looks and Icons
       tags: background
@@ -336,8 +348,10 @@
           ansible.builtin.shell: |
             gsettings set org.gnome.shell favorite-apps "['{{ a1 }}','{{ a2 }}','{{ a3 }}','{{ a4 }}','{{ a5 }}','{{ a6 }}']"
           environment:
-            DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+            DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
           changed_when: false
+
+      rescue: []
 
     - name: Configure wallpaper
       tags: containers_looks
@@ -355,14 +369,15 @@
           ansible.builtin.shell: |
             gsettings set org.gnome.desktop.background picture-uri "file:///home/{{ username }}/.wallpapers/{{ selected_wallpaper }}"
           environment:
-            DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+            DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
           changed_when: false
+
+      rescue: []
 
     - name: Configure wallpaper
       tags: linux_looks
       become: true
       become_user: "{{ username }}"
-      become: true
       block:
 
         - name: Pick a random wallpaper
@@ -375,8 +390,10 @@
           ansible.builtin.shell: |
             gsettings set org.gnome.desktop.background picture-uri "file:///home/{{ username }}/.wallpapers/{{ selected_wallpaper }}"
           environment:
-            DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus"
+            DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
           changed_when: false
+
+      rescue: []
 
     - name: Final Touches
       become: true
@@ -389,3 +406,5 @@
             state: latest
             security: true
             update_only: true
+
+      rescue: []
