@@ -1,29 +1,38 @@
-= Lab 7 -
+= Lab 7 - The Unified Image Pattern (ENTRYPOINT)
+:tip-caption: 💡 TIP
+:warning-caption: ⚠️ WARNING
 
-But wait! Just as we did in the manual procedure, we created a single image to run all the containers. Why don’t we do the same here?
+But wait! Just as we did in the manual procedure (Lab 5), we proved that the four microservices can run from a single image. Why did we go back to building four images in Lab 6?
 
-.Containerfile
+The goal is to create the most efficient and maintainable image possible by using the **unified image pattern**.
+
+== 1. The Unified Containerfile
+
+We define a single `Containerfile` that contains all the shared dependencies and *all* the application code. We use the **`ENTRYPOINT`** instruction to define the *fixed* part of the command (`python3`), and rely on the runtime arguments (the script name) to complete the command.
+
+.Containerfile (Unified)
 [source,dockerfile]
 ----
-FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
-COPY *.py .
-ENTRYPOINT ["python3"]
+include::microservices/Containerfile[]
 ----
 
-Notice we have changed our image slightly to copy all the source code files and change the `CMD` for an `ENTRYPOINT` that will allow us to use the `CMD` at runtime to selectively run a specific python script that will be *taken as an argument*, as follows:
+=== Why ENTRYPOINT is Used
 
-First, we build the image:
+* **`ENTRYPOINT ["python3"]`**: This defines the primary executable that *must* run every time the container starts. It creates the execution environment.
+* **CMD at Runtime**: The arguments we pass when running the container (e.g., `inventory_service.py`) are automatically appended to the `ENTRYPOINT`.
+
+== 2. Building and Deploying the Unified Image
+
+First, we build the unified image. Since we called the container file exactly `Containerfile`, we omit the file name flag (`-f`).
 
 [source,shell]
 ----
 $ podman build -t pharmacy:v2 .
 ----
 
-Notice that since we called the container file exactly `Containerfile`, there is no need to specify the file name at build time
+=== Launch All Services
 
-Now we run the containers:
+We now run four containers from the *same* `pharmacy:v2` image. The command passed at the end of the `podman run` instruction (the script name) becomes the argument to the `ENTRYPOINT`.
 
 [source,shell]
 ----
@@ -33,10 +42,43 @@ $ podman run --rm --name customer_service --network host -d localhost/pharmacy:v
 $ podman run --rm --name billing_service --network host -d localhost/pharmacy:v2 billing_service.py
 ----
 
-Test a service to be sure is working
+== 3. Final Validation
+
+The application should run successfully, demonstrating maximum image efficiency.
+
+=== Verify Connectivity
+
+Test the Inventory Service (Port 5001) using the loopback address (`0.0.0.0` or `127.0.0.1`):
 
 [source,shell]
 ----
-$ curl http://0.0.0.0:5001/view_inventory
+$ curl http://127.0.0.1:5001/view_inventory
 {"inventory":{"medicine_A":{"price":10,"stock":100},"medicine_B":{"price":15,"stock":50}}}
+----
+
+=== Verify Communication and Order Placement
+
+[source,shell]
+----
+# Place a test order, targeting port 5002
+$ curl -X POST \
+    -H "Content-Type: application/json" \
+    -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
+    http://localhost:5002/place_order
+
+# Verify the order exists
+$ curl http://127.0.0.1:5002/view_orders
+----
+
+== 4. Conclusion
+
+This lab successfully proves that **creating a single, efficient base image** for multiple microservices is the best practice for speed, disk usage, and maintenance simplicity. The key is using the `ENTRYPOINT` to define the execution environment and letting the runtime argument (the script name) determine the service's function.
+
+== 5. Terminating the Lab
+
+WARNING: Terminate the services before concluding the module.
+
+[source,shell]
+----
+$ podman stop -a
 ----
