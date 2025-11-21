@@ -4,7 +4,7 @@
 
 ==== Running our application in Kubernetes
 
-We will use K3s a lightweight, easy-to-install Kubernetes distribution designed for resource-constrained environments, making it a good choice for local development and testing. 
+We will use K3s a lightweight, easy-to-install Kubernetes distribution designed for resource-constrained environments, making it a good choice for local development and testing.
 
 Firstly, we will install K3s as a service by running the following command:
 
@@ -45,7 +45,7 @@ We create the namespace as follows:
 
 [source,shell]
 ----
-$ sudo kubectl apply -f namespace.yaml 
+$ sudo kubectl apply -f namespace.yaml
 namespace/pharmacy created
 
 $ sudo kubectl get ns pharmacy
@@ -71,7 +71,7 @@ spec:
       image: localhost/pharmacy:latest
       stdin: false
       tty: false
-      ports: 
+      ports:
         - containerPort: 5004
       command: billing_service.py
 
@@ -85,7 +85,7 @@ $ sudo kubectl apply -f pods.yaml
 pod/billing created
 ----
 
-We can see we got an error 
+We can see we got an error
 
 [source,shell]
 ----
@@ -100,16 +100,16 @@ First we save the local image into a *tar* file that can be exported:
 
 [source,shell]
 ----
-$ podman save -o pharmacy.tar localhost/pharmacy:latest 
-Copying blob 8ff7ad910417 done   | 
-Copying blob c32da389f507 done   | 
-Copying blob ac13480a2447 done   | 
-Copying blob f5af563216a7 done   | 
-Copying blob 260e953d9405 done   | 
-Copying config 1151dc4cf1 done   | 
+$ podman save -o pharmacy.tar localhost/pharmacy:latest
+Copying blob 8ff7ad910417 done   |
+Copying blob c32da389f507 done   |
+Copying blob ac13480a2447 done   |
+Copying blob f5af563216a7 done   |
+Copying blob 260e953d9405 done   |
+Copying config 1151dc4cf1 done   |
 Writing manifest to image destination
 
-$ ls -l pharmacy.tar 
+$ ls -l pharmacy.tar
 -rw-r--r--. 1 username username 480112640 Jan 15 12:56 pharmacy.tar
 ----
 
@@ -118,7 +118,7 @@ Now we need to promote the created tar file to the K3s internal repository:
 [source,shell]
 ----
 $ sudo ctr -n k8s.io image import pharmacy.tar
-[sudo] password for username: 
+[sudo] password for username:
 unpacking localhost/pharmacy:latest (sha256:b62ba2f096ed44107d74601577e7354d23fd584dd815f997d0cd19b50c7a05b4)...done
 ----
 
@@ -138,7 +138,7 @@ $ sudo kubectl apply -f pods.yaml
 pod/billing configured
 ----
 
-We can see we got an error 
+We can see we got an error
 
 [source,shell]
 ----
