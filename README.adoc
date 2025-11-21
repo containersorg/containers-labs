@@ -1,108 +1,160 @@
-= Lab 12 - Using Compose for the Pharmacy Application
+= Lab 13 - Running Applications in Kubernetes
 
-We have advanced significantly in the creation of our application, but we are still handling it mostly in a manual manner. Every time we restart the application, we have to follow a specific process to do so, which is tedious and prone to error. To avoid this, let’s use Compose instead.
+*Future challenge: Can you run the pharmacy application within your Kubernetes cluster?*
 
-Ensure that you have either podman-compose or docker-compose in your environment.
+==== Running our application in Kubernetes
 
-Start by creating a new compose.yaml file:
+We will use K3s a lightweight, easy-to-install Kubernetes distribution designed for resource-constrained environments, making it a good choice for local development and testing. 
 
-We know we will need a volume
-
-[source,yaml]
-----
-version: "4"
-
-volumes:
-  data:
-----
-
-We will require an isolated network:
-
-[source,yaml]
-----
-networks:
-  pharmacy:
-    ipam:
-      driver: default
-----
-
-Now add our services:
-
-.compose.yaml
-[source,yaml]
-----
-services:
-
-  billing_service:
-    image: localhost/pharmacy:v5
-    restart: always
-    deploy:
-      replicas: 1
-    ports:
-      - "5004:5004"
-    command: billing_service.py
-    networks:
-      - pharmacy
-    detach: true
-
-  customer_service:
-    image: localhost/pharmacy:v5
-    restart: always
-    deploy:
-      replicas: 1
-    ports:
-      - "5003:5003"
-    command: customer_service.py
-    networks:
-      - pharmacy
-    detach: true
-
-  inventory_service:
-    image: localhost/pharmacy:v5
-    restart: always
-    deploy:
-      replicas: 1
-    ports:
-      - "5001:5001"
-    command: inventory_service.py
-    networks:
-      - pharmacy
-    detach: true
-
-  order_service:
-    image: localhost/pharmacy:v5
-    restart: always
-    deploy:
-      replicas: 1
-    ports:
-      - "5002:5002"
-    command: order_service.py
-    networks:
-      - pharmacy
-    volumes:
-      - data:/data
-    detach: true
-----
-
-Bring our services up in detached mode using the following command:
+Firstly, we will install K3s as a service by running the following command:
 
 [source,shell]
 ----
-$ podman-compose up -d
+$ curl -sfL https://get.k3s.io | sh -
 ----
 
-And bring it down with the following command:
-
-[source,shell]
-----
-$ podman-compose down
-----
-
-Notice that new networks, volumes, and containers were created, all prepended with the name of our project directory.
-
-There is one more thing to consider. When versioning, we keep using tags like v1 or v2, but that will force us to constantly come back to the compose file whenever a new version is released, it's always a good idea to keep a copy of the latest version of everything tagged as latest so we don’t need to be specific on the version.
+A *kubeconfig* file is written to */etc/rancher/k3s/k3s.yaml* and the service is automatically started or restarted. The install script will install K3s and additional utilities, such as *kubectl*, *crictl*, *k3s-killall.sh*, and *k3s-uninstall.sh*, for example:
 
 [source,shell]
 ----
-$ podman tag localhost/pharmacy:v5 localhost/pharmacy:latest
+$ sudo kubectl get nodes
+NAME              STATUS   ROLES                  AGE   VERSION
+fedora.home.lab   Ready    control-plane,master   26s   v1.28.5+k3s1
 ----
+
+The server can be started and stopped with the following commands:
+
+[source,shell]
+----
+$ sudo systemctl start k3s.service
+$ sudo systemctl stop k3s.service
+----
+
+First we need a namespace for the application, this is the way of isolation within the kubernetes cluster
+
+.namespace.yaml
+[source,yaml]
+----
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pharmacy
+----
+
+We create the namespace as follows:
+
+[source,shell]
+----
+$ sudo kubectl apply -f namespace.yaml 
+namespace/pharmacy created
+
+$ sudo kubectl get ns pharmacy
+NAME       STATUS   AGE
+pharmacy   Active   56s
+----
+
+Create Kubernetes Deployment in a YAML file specifying your container image, replicas, and other configurations. Similar to the compose.yaml file created above.
+
+.pods.yaml
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: billing_service
+  namespace: pharmacy
+spec:
+  replicas: 1
+  containers:
+
+    - name: billing_service
+      image: localhost/pharmacy:latest
+      stdin: false
+      tty: false
+      ports: 
+        - containerPort: 5004
+      command: billing_service.py
+
+----
+
+Apply the deployment YAML to create the deployment in your K3s cluster:
+
+[source,shell]
+----
+$ sudo kubectl apply -f pods.yaml
+pod/billing created
+----
+
+We can see we got an error 
+
+[source,shell]
+----
+$ sudo kubectl get pods -n pharmacy
+NAME      READY   STATUS             RESTARTS   AGE
+billing   0/1     ImagePullBackOff   0          3h7m
+----
+
+K3s uses it's own internal repository using *ContainerD* technology. To load your local Podman image into K3s, you can use the *ctr* tool:
+
+First we save the local image into a *tar* file that can be exported:
+
+[source,shell]
+----
+$ podman save -o pharmacy.tar localhost/pharmacy:latest 
+Copying blob 8ff7ad910417 done   | 
+Copying blob c32da389f507 done   | 
+Copying blob ac13480a2447 done   | 
+Copying blob f5af563216a7 done   | 
+Copying blob 260e953d9405 done   | 
+Copying config 1151dc4cf1 done   | 
+Writing manifest to image destination
+
+$ ls -l pharmacy.tar 
+-rw-r--r--. 1 username username 480112640 Jan 15 12:56 pharmacy.tar
+----
+
+Now we need to promote the created tar file to the K3s internal repository:
+
+[source,shell]
+----
+$ sudo ctr -n k8s.io image import pharmacy.tar
+[sudo] password for username: 
+unpacking localhost/pharmacy:latest (sha256:b62ba2f096ed44107d74601577e7354d23fd584dd815f997d0cd19b50c7a05b4)...done
+----
+
+Now we can see our image inside of K3s:
+
+[source,shell]
+----
+$ sudo crictl images | grep pharmacy
+localhost/pharmacy                           latest                 1151dc4cf1d4a       480MB
+----
+
+Apply the deployment YAML once again to create the deployment in your K3s cluster:
+
+[source,shell]
+----
+$ sudo kubectl apply -f pods.yaml
+pod/billing configured
+----
+
+We can see we got an error 
+
+[source,shell]
+----
+$ sudo kubectl get pods -n pharmacy
+NAME      READY   STATUS             RESTARTS   AGE
+billing   0/1     ImagePullBackOff   0          3h7m
+----
+
+Expose the service to make it accessible outside the cluster:
+
+kubectl expose deployment your-app --type=LoadBalancer --port=80
+
+Test Your Application:
+
+Retrieve the external IP address to access your application:
+
+kubectl get services
+
+Open a browser and navigate to the external IP address and port to access your application.
