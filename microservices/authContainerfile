@@ -1,0 +1,4 @@
+FROM fedora
+RUN dnf install -yqq python3
+COPY authentication.py .
+CMD ["python3", "authentication.py"]

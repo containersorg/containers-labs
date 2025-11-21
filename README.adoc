@@ -1,71 +1,88 @@
-= Lab 10 - Troubleshooting the Application
+=== Lab 11 - Securing our Application
 
-Let’s review the logs of the application using the LNAV LogFile Navigator, which we will start by installing:
+Create a new login screen for our application
 
-[source,shell]
-----
-$ sudo dnf install -y lnav
-----
+.authentication.py
 
-Use it against any of the running containers as follows:
+Notice that the credentials are hardcoded.
 
-[source,shell]
-----
-$ sudo journalctl CONTAINER_NAME=order_service | lnav
-----
-
-Monitor the performance of the application containers. The running processes can be seen with the following command:
+If we want to test it locally, we can:
 
 [source,shell]
 ----
-$ podman top order_service
+$ python3 authentication.py
+Enter your username: fakename
+Enter your password: fakepassword
+Error: Invalid username or password. Authentication failed.
+
+$ python3 authentication.py
+Enter your username: user123
+Enter your password: password123
+Welcome, user123! Authentication successful.
 ----
 
-Performance statistics can be found using the following command:
+convert the solution into a container and test it.
+
+.authContainerfile
+
+Build, run and test!
 
 [source,shell]
 ----
-$ podman stats
+$ podman build -t authenticator:v1 .
+$ podman run --rm -ti --name authenticator localhost/authenticator:v1
+Enter your username: user123
+Enter your password: password123
+Welcome, user123! Authentication successful.
 ----
 
-However, when using containers, we should always strive for self-healing processes. If you remember, in our previous modules, we continued to verify the availability of the application by testing it, like:
+Passing all this information in clear text and every single time the container is executed is not the best approach
+
+Modify our application to take the credentials from environment variables copy from solution/auth.py 
+
+Build version 2, run and test!
 
 [source,shell]
 ----
-$ ansible-playbook play.yml
+$ podman build -t authenticator:v2 .
+$ podman run --rm -ti --name authenticator -e VALID_USERNAME=user123 -e VALID_PASSWORD=password123 localhost/authenticator:v2
+Enter your username: user123
+Enter your password: password123
+Welcome, user123! Authentication successful.
 ----
 
-What if we can add the health check at runtime?
+Notice that this time, the code no longer has the credentials hardcoded; however, we are still passing them in clear text when running the container.
+
+To avoid this, we can utilize secrets. Let’s add the secret directly using the following commands:
 
 [source,shell]
 ----
-$ podman run --rm --name inventory_service --network pharmacy -p 5001:5001 \
-    --health-cmd='curl http://0.0.0.0:5001/view_inventory || exit 1' \
-    --health-interval=30s -d localhost/pharmacy:v5 inventory_service.py
+$ printf "user123" | podman secret create username -
+2fc833daa70b54c79f2dbce5c
+
+$ printf "password123" | podman secret create password -
+d7b9dff4f0d87bfb77401e2a4
 ----
 
-Now we can run the health check at any time, and if there is no answer, it means we are OK!
-
-After running the container with a health check, inspect its status with podman ps:
+Now we can list our secrets
 
 [source,shell]
 ----
-$ podman ps
-CONTAINER ID  IMAGE                  COMMAND              CREATED   STATUS            NAMES
-c8d...        localhost/pharmacy:v5  inventory_service.py 15s ago   Up 14s (healthy)  inventory_service
+$ podman secret list
+ID                         NAME        DRIVER      CREATED             UPDATED
+2fc833daa70b54c79f2dbce5c  username    file        About a minute ago  About a minute ago
+d7b9dff4f0d87bfb77401e2a4  password    file        About a minute ago  About a minute ago
 ----
 
-Notice the status column includes the health of the container, such as (healthy). This gives you an immediate, at-a-glance view of your application's state.
-
-[source,shell]
-----
-$ podman healthcheck run inventory_service
-----
-
-Even if we don’t run it manually, the health check is continuously being executed
+Now we can rerun the container, registering the secrets as environment variables at runtime, and therefore, the real values are never exposed.
 
 [source,shell]
 ----
-$ podman inspect --format='{{json .State.Health.Status}}' inventory_service
-"healthy"
+$ podman run --rm -ti --name authenticator \
+    --secret=username,type=env,target=VALID_USERNAME \
+    --secret=password,type=env,target=VALID_PASSWORD \
+    localhost/authenticator:v2
+Enter your username: user123
+Enter your password: password123
+Welcome, user123! Authentication successful
 ----
