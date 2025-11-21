@@ -1,50 +1,54 @@
-= Lab4 - Creating Images Using Running Containers
+= Lab 5 - Improving the scenario
 
-Our containers are running from our previous module, but if we are required to stop one of them, all the applied changes will be lost. To retain their current state, we have to build images from them as follows:
+Wait! Why do we have to create four different images when we know that the only difference between them is a single Python file containing the service's source code? Why don’t we create a single image with all the code and selectively run each service instead?
 
-[source,shell]
-----
-$ podman commit inventory_service inventory_image:manual
-$ podman commit order_service order_image:manual
-$ podman commit customer_service customer_image:manual
-$ podman commit billing_service billing_image:manual
-----
+To accomplish this select any of the running containers, and instead of having only one Python script copied let’s copy all the source code in this container
 
-Note that we have added the `manual` tag to the container name only to identify that these images were created from containers made following the *manual process*.
-
-Great! We have images with all the required files for each of our containers.
+We can see what we have in the container:
 
 [source,shell]
 ----
-$ podman images
-REPOSITORY                         TAG         IMAGE ID      CREATED             SIZE
-localhost/billing_image            manual      5a57576464cc  About a minute ago  480 MB
-localhost/customer_image           manual      4984b299abcc  About a minute ago  479 MB
-localhost/order_image              manual      1686fcc661b5  About a minute ago  480 MB
-localhost/inventory_image          manual      c795e24d0157  About a minute ago  480 MB
+$ podman exec -ti inventory_service ls -l *.py
+ls: cannot access 'billing_service.py': No such file or directory
+ls: cannot access 'customer_service.py': No such file or directory
+ls: cannot access 'order_service.py': No such file or directory
+-rw-r--r--. 1 root root 363 Jan 13 20:04 inventory_service.py
 ----
 
-Stop all the running containers
+We are missing three files, let’s add them:
+
+[source,shell]
+----
+$ podman cp billing_service.py inventory_service:/
+$ podman cp customer_service.py inventory_service:/
+$ podman cp order_service.py inventory_service:/
+----
+
+Now this running container has all the dependencies and all the application code, let’s build our image and call it `pharmacy`, with the `manual` tag because we are creating it manually:
+
+[source,shell]
+----
+$ podman commit inventory_service pharmacy:manual
+----
+
+We can once again stop all the running containers, and we can also delete the individual images created before:
 
 [source,shell]
 ----
 $ podman stop -a
-$ podman ps
-CONTAINER ID  IMAGE       COMMAND     CREATED     STATUS      PORTS       NAMES
+$ podman rmi localhost/billing_image:manual localhost/customer_image:manual localhost/order_image:manual localhost/inventory_image:manual
 ----
 
-and run them again but this time using the newly created images
+Now run all the containers, but this time using the `pharmacy:manual` image.
 
 [source,shell]
 ----
-$ podman run --rm --name inventory_service --network host -d localhost/inventory_image:manual python3 inventory_service.py
-$ podman run --rm --name order_service --network host -d localhost/order_image:manual python3 order_service.py
-$ podman run --rm --name customer_service --network host -d localhost/customer_image:manual python3 customer_service.py
-$ podman run --rm --name billing_service --network host -d localhost/billing_image:manual python3 billing_service.py
+$ podman run --rm --name inventory_service --network host -d localhost/pharmacy:manual python3 inventory_service.py
+$ podman run --rm --name order_service --network host -d localhost/pharmacy:manual python3 order_service.py
+$ podman run --rm --name customer_service --network host -d localhost/pharmacy:manual python3 customer_service.py
+$ podman run --rm --name billing_service --network host -d localhost/pharmacy:manual python3 billing_service.py
 ----
 
-== Testing the application
+Notice that now, with a single image, we are running all the services, which is easier to control and definitely more efficient.
 
-// TODO: Add testing instructions
-
-Note that when running the containers, we must use the image corresponding to the service in question. Instead of running `/bin/bash` as we did in the previous module, we directly run the application and don’t have to install anything else or copy files because they are already included in the image.
+image::commit.png[400,400,align=center]
