@@ -1,0 +1,13 @@
+piVersion: v1
+kind: Service
+metadata:
+  name: order-service-external
+  namespace: pharmacy
+spec:
+  selector:
+    app: order-service
+  type: NodePort
+  ports:
+    - port: 5002
+      targetPort: 5002
+      nodePort: 30002

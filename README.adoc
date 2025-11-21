@@ -1,28 +1,23 @@
 = Lab 13 - Running Applications in Kubernetes
+:tip-caption: 💡 TIP
+:warning-caption: ⚠️ WARNING
 
-*Future challenge: Can you run the pharmacy application within your Kubernetes cluster?*
+> *Challenge: Can you run the pharmacy application within your Kubernetes cluster?*
 
-==== Running our application in Kubernetes
+We will use K3s, a lightweight, easy-to-install Kubernetes distribution designed for local development and testing.
 
-We will use K3s a lightweight, easy-to-install Kubernetes distribution designed for resource-constrained environments, making it a good choice for local development and testing.
+== 1. Setting Up the K3s Cluster
 
-Firstly, we will install K3s as a service by running the following command:
+=== Install K3s
+
+We install K3s as a system service.
 
 [source,shell]
 ----
 $ curl -sfL https://get.k3s.io | sh -
 ----
 
-A *kubeconfig* file is written to */etc/rancher/k3s/k3s.yaml* and the service is automatically started or restarted. The install script will install K3s and additional utilities, such as *kubectl*, *crictl*, *k3s-killall.sh*, and *k3s-uninstall.sh*, for example:
-
-[source,shell]
-----
-$ sudo kubectl get nodes
-NAME              STATUS   ROLES                  AGE   VERSION
-fedora.home.lab   Ready    control-plane,master   26s   v1.28.5+k3s1
-----
-
-The server can be started and stopped with the following commands:
+The k3s server can be started and stopped with the following commands:
 
 [source,shell]
 ----
@@ -30,131 +25,156 @@ $ sudo systemctl start k3s.service
 $ sudo systemctl stop k3s.service
 ----
 
-First we need a namespace for the application, this is the way of isolation within the kubernetes cluster
+NOTE: A `kubeconfig` file is written to `/etc/rancher/k3s/k3s.yaml`. The service is automatically started, and utilities like `kubectl` are installed.
 
-.namespace.yaml
-[source,yaml]
+=== Verify Cluster Status
+
+Use `kubectl` (aliased via `sudo` because of the installation path) to verify the node is ready.
+
+[source,shell]
 ----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: pharmacy
+$ sudo kubectl get nodes
+NAME              STATUS   ROLES                 AGE   VERSION
+fedora.home.lab   Ready    control-plane,master  26s   v1.28.5+k3s1
 ----
 
-We create the namespace as follows:
+=== Create Namespace
+
+Namespaces provide logical isolation within the Kubernetes cluster.
 
 [source,shell]
 ----
 $ sudo kubectl apply -f namespace.yaml
 namespace/pharmacy created
-
-$ sudo kubectl get ns pharmacy
-NAME       STATUS   AGE
-pharmacy   Active   56s
 ----
 
-Create Kubernetes Deployment in a YAML file specifying your container image, replicas, and other configurations. Similar to the compose.yaml file created above.
+== 2. Defining the Application Deployment (YAML)
 
-.pods.yaml
-[source,yaml]
-----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: billing_service
-  namespace: pharmacy
-spec:
-  replicas: 1
-  containers:
+We must define two things for our application: the **Deployment** (which manages the running pods and guarantees replicas) and the **Service** (which provides a stable network endpoint for the pods).
 
-    - name: billing_service
-      image: localhost/pharmacy:latest
-      stdin: false
-      tty: false
-      ports:
-        - containerPort: 5004
-      command: billing_service.py
+// # ... Repeat Deployment and Service for inventory-service (Port 5001)
+// # ... Repeat Deployment and Service for customer-service (Port 5003)
+// # ... Repeat Deployment and Service for order-service (Port 5002, with Volume claim)
 
-----
+== 3. Troubleshooting Image Access
 
-Apply the deployment YAML to create the deployment in your K3s cluster:
+=== Apply Initial Deployment
 
 [source,shell]
 ----
-$ sudo kubectl apply -f pods.yaml
-pod/billing created
+$ sudo kubectl apply -f deployment.yaml
+deployment.apps/billing-deployment created
 ----
 
-We can see we got an error
+=== Apply Service
+
+[source,shell]
+----
+$ sudo kubectl apply -f service.yaml
+service/billing-service created
+----
+
+=== Encountering the ImagePullBackOff Error
+
+Check the status of the pods:
 
 [source,shell]
 ----
 $ sudo kubectl get pods -n pharmacy
-NAME      READY   STATUS             RESTARTS   AGE
-billing   0/1     ImagePullBackOff   0          3h7m
+NAME                 READY   STATUS             RESTARTS   AGE
+billing-...          0/1     ImagePullBackOff   0          3h7m
 ----
 
-K3s uses it's own internal repository using *ContainerD* technology. To load your local Podman image into K3s, you can use the *ctr* tool:
+💡 TIP: The `ImagePullBackOff` error occurs because K3s (using ContainerD) cannot access the local Podman image repository (`localhost/pharmacy:latest`). It needs the image loaded into its own internal registry.
 
-First we save the local image into a *tar* file that can be exported:
+=== Export Image from Podman
+
+We save the local image into a `tar` archive that can be exported.
 
 [source,shell]
 ----
 $ podman save -o pharmacy.tar localhost/pharmacy:latest
-Copying blob 8ff7ad910417 done   |
-Copying blob c32da389f507 done   |
-Copying blob ac13480a2447 done   |
-Copying blob f5af563216a7 done   |
-Copying blob 260e953d9405 done   |
-Copying config 1151dc4cf1 done   |
-Writing manifest to image destination
 
 $ ls -l pharmacy.tar
 -rw-r--r--. 1 username username 480112640 Jan 15 12:56 pharmacy.tar
 ----
 
-Now we need to promote the created tar file to the K3s internal repository:
+=== Import Image into ContainerD
+
+We use the `ctr` (ContainerD) tool to load the image archive directly into the K3s internal repository.
 
 [source,shell]
 ----
 $ sudo ctr -n k8s.io image import pharmacy.tar
-[sudo] password for username:
-unpacking localhost/pharmacy:latest (sha256:b62ba2f096ed44107d74601577e7354d23fd584dd815f997d0cd19b50c7a05b4)...done
+unpacking localhost/pharmacy:latest...done
 ----
 
-Now we can see our image inside of K3s:
+We can verify the image is now visible to K3s's runtime using `crictl`:
 
 [source,shell]
 ----
 $ sudo crictl images | grep pharmacy
-localhost/pharmacy                           latest                 1151dc4cf1d4a       480MB
+localhost/pharmacy               latest             1151dc4cf1d4a       480MB
 ----
 
-Apply the deployment YAML once again to create the deployment in your K3s cluster:
+== 4. Final Deployment and Access
+
+=== Redeploy the Manifest
+
+Applying the deployment YAML again forces the scheduler to restart the pods. Since the image is now locally available, the pods will successfully enter the `Running` state.
 
 [source,shell]
 ----
-$ sudo kubectl apply -f pods.yaml
-pod/billing configured
+$ sudo kubectl apply -f deployment.yaml
+deployment.apps/billing-deployment configured
+
+$ sudo kubectl apply -f service.yaml
+service/billing-service configured
 ----
 
-We can see we got an error
+Check the status:
 
 [source,shell]
 ----
 $ sudo kubectl get pods -n pharmacy
-NAME      READY   STATUS             RESTARTS   AGE
-billing   0/1     ImagePullBackOff   0          3h7m
+NAME                 READY   STATUS    RESTARTS   AGE
+billing-...          1/1     Running   0          2m
+# ... (all pods should show Running)
 ----
 
-Expose the service to make it accessible outside the cluster:
+=== Expose and Test External Service Access
 
-kubectl expose deployment your-app --type=LoadBalancer --port=80
+To make the application accessible from your host machine (outside the K3s cluster), we create a service of type `NodePort` (the easiest type for local testing on K3s).
 
-Test Your Application:
+[source,shell]
+----
+$ sudo kubectl apply -f nodeport.yml
+service/order-service-external created
+----
 
-Retrieve the external IP address to access your application:
+== Test Application
 
-kubectl get services
+Retrieve the external port assigned to your service (it should be 30002 or a port in the range 30000-32767).
 
-Open a browser and navigate to the external IP address and port to access your application.
+[source,shell]
+----
+# Use the Node's IP and the NodePort (e.g., 30002) to access the Order Service externally.
+$ curl http://127.0.0.1:30002/view_orders
+----
+
+== 5. Terminating the Lab
+
+[source,shell]
+----
+# Delete all resources in the pharmacy namespace
+$ sudo kubectl delete ns pharmacy
+
+# Stop K3s cluster
+$ sudo systemctl stop k3s
+----
+
+== Final Conclusion: The Journey to Containerization
+
+The series of labs, from modeling the monolithic application (Lab 1) to deploying a complete microservices stack on K3s (Lab 13), demonstrates the fundamental shift required for modern application management.
+
+By breaking down applications into smaller, manageable services and leveraging container orchestration platforms like Kubernetes, developers and operations teams can achieve greater scalability, resilience, and agility in deploying applications. This journey highlights the importance of understanding both the application architecture and the underlying infrastructure to fully harness the benefits of containerization.

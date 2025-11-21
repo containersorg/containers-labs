@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-deployment
+  namespace: pharmacy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: billing-service
+  template:
+    metadata:
+      labels:
+        app: billing-service
+    spec:
+      containers:
+        - name: billing-service
+          image: localhost/pharmacy:latest
+          ports:
+            - containerPort: 5004
+          command: ["python3"]
+          args: ["billing_service.py"]
