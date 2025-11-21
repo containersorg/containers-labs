@@ -1,21 +1,34 @@
-= Lab 5 - Improving the scenario
+= Lab 5 - Improving Image Efficiency (Single Image Source)
+:tip-caption: 💡 TIP
+:warning-caption: ⚠️ WARNING
 
-Wait! Why do we have to create four different images when we know that the only difference between them is a single Python file containing the service's source code? Why don’t we create a single image with all the code and selectively run each service instead?
+Wait! Why did we create four different images in the previous lab when we know that the only difference between them is the *command* we run and the *port*? The dependencies (Python, Flask, Requests) are identical. Why not create a single image with all the code and selectively run each service instead?
 
-To accomplish this select any of the running containers, and instead of having only one Python script copied let’s copy all the source code in this container
+This process is highly recommended because it:
 
-We can see what we have in the container:
+.  **Saves Disk Space:** The base layer containing the OS and Python dependencies is only stored once.
+.  **Simplifies Updates:** To patch Python, you only rebuild one image, not four.
+.  **Encapsulates Code:** All application source code lives in a single, version-controlled unit.
+
+== 1. Consolidating Source Code and Dependencies
+
+We will now commit a new image, `pharmacy:manual`, that contains *all* application source code.
+
+=== Verify Current Code State
+
+Select the running `inventory_service` container from Lab 4 and inspect its file list.
 
 [source,shell]
 ----
 $ podman exec -ti inventory_service ls -l *.py
 ls: cannot access 'billing_service.py': No such file or directory
-ls: cannot access 'customer_service.py': No such file or directory
-ls: cannot access 'order_service.py': No such file or directory
+# ... (and other files are missing)
 -rw-r--r--. 1 root root 363 Jan 13 20:04 inventory_service.py
 ----
 
-We are missing three files, let’s add them:
+=== Copy All Missing Source Code
+
+We are missing the other three service files. Copy all of them into the running `inventory_service` container:
 
 [source,shell]
 ----
@@ -24,22 +37,45 @@ $ podman cp customer_service.py inventory_service:/
 $ podman cp order_service.py inventory_service:/
 ----
 
-Now this running container has all the dependencies and all the application code, let’s build our image and call it `pharmacy`, with the `manual` tag because we are creating it manually:
+=== Commit the Unified Image
+
+This running container now has all the dependencies and all the application code. Let's build our unified image and call it `pharmacy`.
 
 [source,shell]
 ----
 $ podman commit inventory_service pharmacy:manual
 ----
 
-We can once again stop all the running containers, and we can also delete the individual images created before:
+== 2. Cleanup and Image Management
+
+Before testing the unified image, we clean up the previous, redundant individual images.
+
+=== Stop Running Containers
 
 [source,shell]
 ----
 $ podman stop -a
+$ podman ps
+CONTAINER ID  IMAGE      COMMAND    CREATED    STATUS    PORTS      NAMES
+# Output should be empty
+----
+
+=== Remove Redundant Images
+
+Remove the four individual service images created in Lab 4.
+
+[source,shell]
+----
 $ podman rmi localhost/billing_image:manual localhost/customer_image:manual localhost/order_image:manual localhost/inventory_image:manual
 ----
 
-Now run all the containers, but this time using the `pharmacy:manual` image.
+TIP: This command saves considerable disk space, as those four images shared most of their base layers but duplicated the final layers.
+
+== 3. Testing the Unified Image Deployment
+
+We will now run all services again, but every container will be instantiated from the *same* `pharmacy:manual` image. The command passed at runtime determines which service is activated.
+
+=== Launch All Services from the Single Image
 
 [source,shell]
 ----
@@ -49,6 +85,29 @@ $ podman run --rm --name customer_service --network host -d localhost/pharmacy:m
 $ podman run --rm --name billing_service --network host -d localhost/pharmacy:manual python3 billing_service.py
 ----
 
-Notice that now, with a single image, we are running all the services, which is easier to control and definitely more efficient.
+Notice that now, with a **single image**, we are running all four services, which is much more efficient and easier to manage in a registry.
 
-image::commit.png[400,400,align=center]
+=== Final Application Test
+
+Use a free terminal to verify the Order Service (Port 5002) is running and can communicate with Inventory (Port 5001).
+
+[source,shell]
+----
+# Place a test order (requires communication between services)
+$ curl -X POST \
+    -H "Content-Type: application/json" \
+    -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
+    http://localhost:5002/place_order
+
+# Verify the order exists
+$ curl http://127.0.0.1:5002/view_orders
+----
+
+== 4. Terminating the Lab
+
+WARNING: Terminate the services before moving to the next lab.
+
+[source,shell]
+----
+$ podman stop -a
+----
