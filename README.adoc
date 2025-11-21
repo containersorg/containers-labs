@@ -1,0 +1,132 @@
+= Lab03 - Managing Containers with Commands
+
+We have executed our demo application as a monolith and as microservices, we haven't used containers to host it; instead, we have used regular services running on a server like any other application.
+
+Running microservices without `Containerfiles` or pre-built `images` (Concepts that we will explore later) involves running each microservice manually, like before but this time inside a container. This can be more complex and less standardized, but it's possible.
+
+Each container will need to be treated as a new machine, all dependencies must be resolved before executing the service. Additionally, network connectivity will need to be considered to enable communication between the containers.
+
+IMPORTANT: Be sure all previously executed services are stopped by closing the terminals where the services were running.
+
+To manually run a container, we will use the `podman run` using `Fedora` as our baseline image, we will connect the containers to the same network as our host computer by using the `--network host` argument and will name each container with a unique name representative of the service they are running.
+
+Open a terminal and execute the following commands to create the containers:
+
+[source,shell]
+----
+$ podman run --rm --name inventory_service --network host -dti fedora /bin/bash
+$ podman run --rm --name order_service --network host -dti fedora /bin/bash
+$ podman run --rm --name customer_service --network host -dti fedora /bin/bash
+$ podman run --rm --name billing_service --network host -dti fedora /bin/bash
+----
+
+[NOTE]
+====
+. We added the (--rm) option to make sure the containers are deleted from our system once we are done working with them.
+. We also added the (-dti) flags to indicate that we want the container to be created `detached` with a `terminal` and in `interactive` mode we can connect to.
+. Finally, we passed the command (/bin/bash), which opens a terminal where we can interact with the container.
+====
+
+[IMPORTANT]
+====
+A Note on Container Networking: In the Host Mode, we use the (--network host) flag in these commands. This flag effectively turns off all network isolation for our containers. They will share the host machine's network stack, meaning a service running on port 5001 inside a container is identical to a service running on port 5001 on the host itself.
+====
+
+See our containers running by executing the `podman ps` command:
+
+[source,shell]
+----
+$ podman ps
+CONTAINER ID  IMAGE                 COMMAND     CREATED         STATUS   NAMES
+89d43412438b  fedoraproject/fedora  /bin/bash   2 minutes ago   Up 2 min inventory_service
+36621434c603  fedoraproject/fedora  /bin/bash   13 seconds ago  Up 4 sec order_service
+d1f611a5bde1  fedoraproject/fedora  /bin/bash   8 seconds ago   Up 8 sec customer_service
+80bd1c9ac0f3  fedoraproject/fedora  /bin/bash   4 seconds ago   Up 4 sec billing_service
+----
+
+== Preparing containers
+
+These containers are just empty new servers, no `Python3`, `pip` or `Flask` have been installed and of course they don't have the corresponding code of our application
+
+> Let's fix that!
+
+Start by installing the dependencies:
+
+[source,shell]
+----
+$ podman exec -ti inventory_service dnf install -y python3 pip
+$ podman exec -ti order_service dnf install -y python3 pip
+$ podman exec -ti customer_service dnf install -y python3 pip
+$ podman exec -ti billing_service dnf install -y python3 pip
+----
+
+Notice we are using the `podman exec` command to execute the same installation command we used in our host but this time inside the container.
+
+Now, with pip installed, we can install `Flask` and `requests` libraries on every container using the same methodology.
+
+[source,shell]
+----
+$ podman exec -ti inventory_service pip install Flask requests
+$ podman exec -ti order_service pip install Flask requests
+$ podman exec -ti customer_service pip install Flask requests
+$ podman exec -ti billing_service pip install Flask requests
+----
+
+Finally, we need to copy the code of our application to the corresponding container.
+
+[source,shell]
+----
+$ podman cp inventory_service.py inventory_service:/
+$ podman cp order_service.py order_service:/
+$ podman cp customer_service.py customer_service:/
+$ podman cp billing_service.py billing_service:/
+----
+
+Note that this time, we used the `podman cp` command to copy a file from our local filesystem on the host into the container at a specified location.
+
+To verify that our files were successfully copied, we can run the following commands:
+
+[source,shell]
+----
+$ podman exec -ti inventory_service ls -l *_service.py
+$ podman exec -ti  order_service ls -l  *_service.py
+$ podman exec -ti  customer_service ls -l *_service.py
+$ podman exec -ti  billing_service ls -l *_service.py
+----
+
+== Executing services 
+
+Now each running container is ready to start the services:
+
+[source,shell]
+----
+$ podman exec -d inventory_service python3 inventory_service.py
+$ podman exec -d order_service python3 order_service.py
+$ podman exec -d customer_service python3 customer_service.py
+$ podman exec -d billing_service python3 billing_service.py
+----
+
+By running the `podman top` command we should be able to see the processes running:
+
+[source,shell]
+----
+$ podman top inventory_service
+$ podman top order_service
+$ podman top customer_service
+$ podman top billing_service
+----
+
+We can also see the processes running directly from the host server, because remember that at the end containers are processes running in the host:
+
+[source,shell]
+----
+$ ps -ef | grep service.py
+----
+
+== Testing our Application
+
+// TODO: Add testing instructions here
+
+Now that our services are running independently in containers, they can fully leverage the advantages of containerized applications. We've initiated them manually, but in the next lab, we will adopt a more automated and efficient approach.
+
+image::containerized.png[600,600,align=center]
