@@ -1,57 +1,103 @@
-= Lab 02: Fixing the Microservices Application
+= Lab 02-Fix: Fixing the Microservices Application
+:tip-caption: 💡 TIP
+:warning-caption: ⚠️ WARNING
 
-== Enabling value retention
+== 1. Debugging State Persistence
 
-Notice something went wrong as results are returning empty in the `view_orders` service; it appears to be failing to store the order. Let's address this issue!
+After running the tests in Lab 2, notice that the `view_orders` service always returns an empty list, regardless of the POST requests we send. This indicates the service is **failing to store the order** in memory.
 
-NOTICE: There is no need to stop the service at this point. A new version of the order_service.py file has been sent by the engineer team and is already in our microservices directory.
+NOTICE: There is no need to stop any services other than the `order_service` at this point. A new version of the `order_service.py` file has been provided by the engineering team and is already in our `microservices` directory.
 
-> We are responsible for updating the service but not the code itself.
+=== Updating the Order Service Code
 
-== Updating the Order Service
-
-Go to the terminal where the order_service is running. We will stop the current service and replace it with the updated version.
-
-Next, use the (`CTRL+C`) key combination to halt the service, and immediately restart the service using the new version in the same terminal with the following command:
+1.  **Go to the terminal (Terminal B)** where the **`order_service`** is currently running (on port `5002`).
+2.  Use the **`CTRL+C`** key combination to halt the running service.
+3.  Immediately restart the service using the new version in the same terminal:
 
 [source,shell]
 ----
 $ python3 order_service.py
+ * Running on http://127.0.0.1:5002 (Press CTRL+C to quit)
 ----
 
-Now, proceed to run the a test:
+=== Verify State Retention (POST/GET Test)
 
-// TODO: add test instructions
+We will now place an order and verify that the data persists after the fix.
 
-Great! We have successfully transitioned to the microservices version of our application.
+[source,shell]
+----
+# 1. Place a new order using POST method, targeting port 5002
+$ curl -X POST \
+    -H "Content-Type: application/json" \
+    -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
+    http://localhost:5002/place_order
+
+# 2. Verify the order exists by querying the Order Processing Service
+$ curl http://127.0.0.1:5002/view_orders
+
+{
+  "orders": [
+    {
+      "customer_id": "customer_id_1",
+      # ... data confirms persistence ...
+    }
+  ]
+}
+----
+
+Great! We have successfully enabled state retention in the order service.
 
 .*Stop and Think!*
 ****
 image::think.png["Stop and Think",50,50,align="center"] 
 
-Our new order service successfully placed an order, but it never checked if the medicine was in stock! In our monolithic app, this check occurred automatically because it was a single program. Now that they are separate services, how can the order service ask the inventory service about its stock? This is the central challenge—and benefit—of microservices: inter-service communication.
+Our new order service successfully placed an order, but it never checked if the medicine was in stock!
+
+In our monolithic app, this check occurred automatically because all functions were in a single program. Now that they are separate services, how can the order service ask the inventory service about its stock? This is the central challenge—and benefit—of microservices: *inter-service communication*.
 ****
 
-== Enabling Inter-Service Communication
+== 2. Enabling Inter-Service Communication
 
-To make our microservices truly functional, they need to talk to each other. We will modify the `order_service` to call the `inventory_service's` API to check stock before placing an order.
+To make our microservices truly functional, the **Order Service** needs to perform an API call to the **Inventory Service (5001)** before finalizing an order.
 
-A new version of the order service code has been provided to us by the engineering team and was placed under the `fix` directory in our project.
+A new version of the order service code that includes this API logic has been provided in the `fix` directory.
 
-. Make a backup copy of the existing `order_service.py` file in the `microservice` directory, just in case we need to revert back.
-. Move the `fix/order_service.py` file to the `microservice` directory to replace the existing order service code.
+=== Prepare the New Communicating Code
 
-Now, as we did in our previous fix, stop the running `order_service` and run this new version. 
+. **Backup:** Make a backup copy of the existing `order_service.py` file in the `microservices` directory.
+. **Replace:** Move the `fix/order_service.py` file to the `microservices` directory to replace the existing order service code.
 
-Try to make an order with more items than those we know are in stock. You will receive an "Insufficient stock" error.
+=== Restart the Order Service
 
-// TODO: add test instructions
+Go back to **Terminal B**, halt the running `order_service` (`CTRL+C`), and run this new version.
 
 [source,shell]
 ----
-$ 
+$ python3 order_service.py
+ * Running on http://127.0.0.1:5002 (Press CTRL+C to quit)
 ----
 
-This demonstrates a true (simple) communicating microservices architecture.
+=== Test Stock Validation
 
-image::micro2.png[450,450,align=center]
+We know `medicine_A` only has a stock of **100**. Try placing an order with more items than available stock. The Order Service will now call the Inventory Service first and fail the request.
+
+[source,shell]
+----
+# Attempt to order 150 units of medicine_A (Stock is only 100 on port 5001)
+$ curl -X POST \
+    -H "Content-Type: application/json" \
+    -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 150}' \
+    http://localhost:5002/place_order
+
+{
+  "error": "Insufficient stock for medicine_A. Only 100 units available."
+}
+----
+
+This demonstrates a true (simple) **communicating microservices architecture**. The Order Service is now resilient and dependent on the Inventory Service for business logic validation.
+
+image::images/micro2.png[450,450,align=center]
+
+=== Step 2.4: Conclusion
+
+This fix illustrates that in a microservices architecture, even basic business rules (like stock validation) must be handled by explicit, authenticated **API calls** between the services. This is why services must be network-accessible and independently deployable units—the perfect environment for **containers**.
