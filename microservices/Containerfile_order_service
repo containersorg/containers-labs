@@ -1,0 +1,5 @@
+FROM fedora
+RUN dnf install -yqq python3 pip
+RUN pip install Flask
+COPY order_service.py .
+CMD ["python3", "order_service.py"]

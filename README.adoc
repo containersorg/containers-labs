@@ -1,54 +1,89 @@
-= Lab 5 - Improving the scenario
+= Lab 6 - A More Automated Approach
 
-Wait! Why do we have to create four different images when we know that the only difference between them is a single Python file containing the service's source code? Why don’t we create a single image with all the code and selectively run each service instead?
+Up to this point, our approach has been implemented *manually*; every single step takes time, and the only way to repeat the process is to repeat it completely. This is, of course, not the most efficient method. However, we can make use of `Containerfiles` to automate the process.
 
-To accomplish this select any of the running containers, and instead of having only one Python script copied let’s copy all the source code in this container
+To containerize each microservice, you can create a Containerfile for each service as follows:
 
-We can see what we have in the container:
+.Containerfile_inventory_service
+[source,dockerfile]
+----
+FROM fedora
+RUN dnf install -yqq python3 pip
+RUN pip install Flask
+COPY inventory_service.py .
+CMD ["python3", "inventory_service.py"]
+----
+
+.Containerfile_order_service
+[source,dockerfile]
+----
+FROM fedora
+RUN dnf install -yqq python3 pip
+RUN pip install Flask
+COPY order_service.py .
+CMD ["python3", "order_service.py"]
+----
+
+.Containerfile_customer_service
+[source,dockerfile]
+----
+FROM fedora
+RUN dnf install -yqq python3 pip
+RUN pip install Flask
+COPY customer_service.py .
+CMD ["python3", "customer_service.py"]
+----
+
+.Containerfile_billing_service
+[source,dockerfile]
+----
+FROM fedora
+RUN dnf install -yqq python3 pip
+RUN pip install Flask
+COPY billing_service.py .
+CMD ["python3", "billing_service.py"]
+----
+
+Notice that each of the Containerfiles follows the same steps as we did when creating the containers manually:
+
+. installing dependencies
+. copying the source code
+. running the service
+
+To build these images, navigate to the directory containing each service's `Containerfile` and run the following command:
 
 [source,shell]
 ----
-$ podman exec -ti inventory_service ls -l *.py
-ls: cannot access 'billing_service.py': No such file or directory
-ls: cannot access 'customer_service.py': No such file or directory
-ls: cannot access 'order_service.py': No such file or directory
--rw-r--r--. 1 root root 363 Jan 13 20:04 inventory_service.py
+$ podman build -t inventory-service -f Containerfile_inventory_service .
+$ podman build -t order-service -f Containerfile_order_service .
+$ podman build -t customer-service -f Containerfile_customer_service .
+$ podman build -t billing-service -f Containerfile_billing_service .
 ----
 
-We are missing three files, let’s add them:
+Note that we are no longer tagging our images as manual because they are being created automatically.
 
 [source,shell]
 ----
-$ podman cp billing_service.py inventory_service:/
-$ podman cp customer_service.py inventory_service:/
-$ podman cp order_service.py inventory_service:/
+$ podman images
+REPOSITORY                         TAG         IMAGE ID      CREATED         SIZE
+localhost/billing-service          latest      d5f2a420aba5  19 seconds ago  480 MB
+localhost/customer-service         latest      3744e51347f2  24 seconds ago  480 MB
+localhost/order-service            latest      1ae01d6ddef5  42 seconds ago  480 MB
+localhost/inventory-service        latest      8a043ac8b906  59 seconds ago  480 MB
 ----
 
-Now this running container has all the dependencies and all the application code, let’s build our image and call it `pharmacy`, with the `manual` tag because we are creating it manually:
+Did you notice how fast the building process was? Since images are built in layers, the repetitive layers do not have to be processed twice, and therefore, the repetitive steps are skipped.
+
+Once ready, we can execute our container as follows:
 
 [source,shell]
 ----
-$ podman commit inventory_service pharmacy:manual
+$ podman run --rm --name inventory_service --network host -d localhost/inventory-service
+$ podman run --rm --name order_service --network host -d localhost/order-service
+$ podman run --rm --name customer_service --network host -d localhost/customer-service
+$ podman run --rm --name billing_service --network host -d localhost/billing-service
 ----
 
-We can once again stop all the running containers, and we can also delete the individual images created before:
+== Testing the application
 
-[source,shell]
-----
-$ podman stop -a
-$ podman rmi localhost/billing_image:manual localhost/customer_image:manual localhost/order_image:manual localhost/inventory_image:manual
-----
-
-Now run all the containers, but this time using the `pharmacy:manual` image.
-
-[source,shell]
-----
-$ podman run --rm --name inventory_service --network host -d localhost/pharmacy:manual python3 inventory_service.py
-$ podman run --rm --name order_service --network host -d localhost/pharmacy:manual python3 order_service.py
-$ podman run --rm --name customer_service --network host -d localhost/pharmacy:manual python3 customer_service.py
-$ podman run --rm --name billing_service --network host -d localhost/pharmacy:manual python3 billing_service.py
-----
-
-Notice that now, with a single image, we are running all the services, which is easier to control and definitely more efficient.
-
-image::commit.png[400,400,align=center]
+// TODO: Add testing instructions
