@@ -1,12 +1,16 @@
-=== Lab 11 - Securing our Application
+= Lab 11 - Securing our Application (Secrets Management)
+:tip-caption: 💡 TIP
+:warning-caption: ⚠️ WARNING
 
-Create a new login screen for our application
+The final step in containerization is ensuring we handle sensitive data (like credentials) securely, preventing them from being accidentally committed to source code or exposed in deployment commands.
 
-.authentication.py
+== 1.Hardcoded Credentials (Insecure Base)
 
-Notice that the credentials are hardcoded.
+The initial version of our application, `auth.py`, contains the credentials hardcoded within the script itself.
 
-If we want to test it locally, we can:
+=== Local Testing
+
+Test the local script to confirm the expected behavior:
 
 [source,shell]
 ----
@@ -21,39 +25,56 @@ Enter your password: password123
 Welcome, user123! Authentication successful.
 ----
 
-convert the solution into a container and test it.
+=== Containerizing the Insecure App
 
-.authContainerfile
-
-Build, run and test!
+Build and run the containerized version using the `authContainerfile` and the `auth.py`.
 
 [source,shell]
 ----
-$ podman build -t authenticator:v1 .
+$ podman build -t authenticator:v1 -f authContainerfile .
 $ podman run --rm -ti --name authenticator localhost/authenticator:v1
 Enter your username: user123
 Enter your password: password123
 Welcome, user123! Authentication successful.
 ----
 
-Passing all this information in clear text and every single time the container is executed is not the best approach
+NOTE: This is the least secure approach. Anyone viewing the source code knows the password.
 
-Modify our application to take the credentials from environment variables copy from solution/auth.py 
+== 2. Environment Variables (Better, but Exposed)
 
-Build version 2, run and test!
+We improve security by modifying the application to read credentials from **environment variables**, removing them from the source code. The updated file is located in `solution/auth.py`.
+
+. Copy the updated code and rebuild the image:
+[source,shell]
+----
+$ cp solution/auth.py authentication.py
+$ podman build -t authenticator:v2 -f authContainerfile .
+----
+
+=== Running with Exposed Variables
+
+We are now passing the credentials in clear text when running the container.
 
 [source,shell]
 ----
-$ podman build -t authenticator:v2 .
-$ podman run --rm -ti --name authenticator -e VALID_USERNAME=user123 -e VALID_PASSWORD=password123 localhost/authenticator:v2
+# WARNING: This exposes secrets via the 'podman inspect' command!
+$ podman run --rm -ti --name authenticator \
+    -e VALID_USERNAME=user123 -e VALID_PASSWORD=password123 \
+    localhost/authenticator:v2
 Enter your username: user123
 Enter your password: password123
 Welcome, user123! Authentication successful.
 ----
 
-Notice that this time, the code no longer has the credentials hardcoded; however, we are still passing them in clear text when running the container.
+WARNING: Although the secret is not in the source code, it is still visible to any user who can run `podman inspect` on the host machine. This is **unacceptable** for true secrets. 
 
-To avoid this, we can utilize secrets. Let’s add the secret directly using the following commands:
+== 3. Utilizing Podman Secrets (Secure Production Method) 🏆
+
+To avoid exposing the real values in the clear text command history or via `podman inspect`, we utilize Podman's built-in secrets management functionality.
+
+=== Create Secrets on the Host
+
+We create secure, dedicated secrets storage for the username and password.
 
 [source,shell]
 ----
@@ -74,7 +95,9 @@ ID                         NAME        DRIVER      CREATED             UPDATED
 d7b9dff4f0d87bfb77401e2a4  password    file        About a minute ago  About a minute ago
 ----
 
-Now we can rerun the container, registering the secrets as environment variables at runtime, and therefore, the real values are never exposed.
+=== Launch Container Using Secrets
+
+We run the container, instructing Podman to map the secure secret storage to the application's required environment variables (`VALID_USERNAME`, `VALID_PASSWORD`) at runtime. The secrets themselves are never visible on the command line.
 
 [source,shell]
 ----
@@ -85,4 +108,14 @@ $ podman run --rm -ti --name authenticator \
 Enter your username: user123
 Enter your password: password123
 Welcome, user123! Authentication successful
+----
+
+This final stage is the **most secure practice** for container deployment, ensuring sensitive data is protected using the platform's native secrets management features.
+
+== 4. Terminating the Lab
+
+[source,shell]
+----
+$ podman rm authenticator
+$ podman secret rm username password
 ----
