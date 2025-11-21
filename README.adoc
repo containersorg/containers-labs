@@ -8,18 +8,20 @@ The structure of the repository divided by multiple branches, each branch corres
 |===
 | Branch Name   | Description
 | main          | Main branch containing the general README and tools
-| lab-01        | Building a monolithic application
-| lab-02        | Converting the monolithic application to microservices
-| lab-03        | Running microservices with in containers (manual approach)
-| lab-04        | Creating multiple images from running containers
-| lab-05        | Improving with a single image from running containers
-| lab-06        | Automating container builds with Containerfiles
-| lab-07        | Adding persistent storage to containers
-| lab-08        | Isolating containers with networks
-| lab-09        | Troubleshooting and debugging containers and adding health checks
-| lab-10        | Securing the application
-| lab-11        | Orchestrating containers with Podman Compose
-| lab-12        | Deploying in a Kubernetes cluster
+| lab-01        | Monolithic Architecture Application
+| lab-02        | Microservices Architecture Application
+| lab-02-fix    | Fixing the Microservices Application (manual approach)
+| lab-03        | Managing Containers with Commands (manual approach)
+| lab-04        | Creating Images Using Running Containers (manual approach)
+| lab-05        | Improving Image Efficiency (Single Image Source)
+| lab-06        | A More Automated Approach (Containerfiles)
+| lab-07        | The Unified Image Pattern (ENTRYPOINT)
+| lab-08        | Making Data Persistent (Volumes)
+| lab-09        | Isolate the Application (Bridge Networking)
+| lab-10        | Troubleshooting the Application
+| lab-11        | Securing our Application (Secrets Management)
+| lab-12        | Using Compose for the Pharmacy Application
+| lab-13        | Running Applications in Kubernetes
 |===
 
 image::images/podman.png[align="center"]
