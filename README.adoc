@@ -1,108 +1,71 @@
 = Lab 12 - Using Compose for the Pharmacy Application
+:tip-caption: 💡 TIP
+:warning-caption: ⚠️ WARNING
 
-We have advanced significantly in the creation of our application, but we are still handling it mostly in a manual manner. Every time we restart the application, we have to follow a specific process to do so, which is tedious and prone to error. To avoid this, let’s use Compose instead.
+We have advanced significantly in the creation of our application, but we are still handling deployment manually. Manually running four containers with complex flags (`--network`, `-p`, `-v`) is tedious and prone to error.
 
-Ensure that you have either podman-compose or docker-compose in your environment.
+To automate the entire application stack deployment and lifecycle, we will use **Compose** (via `podman-compose` or `docker-compose`).
 
-Start by creating a new compose.yaml file:
+== 1. Prerequisites
 
-We know we will need a volume
+Ensure you have either `podman-compose` or `docker-compose` installed and the final, unified image from Lab 9 is ready.
 
-[source,yaml]
+[source,shell]
 ----
-version: "4"
-
-volumes:
-  data:
-----
-
-We will require an isolated network:
-
-[source,yaml]
-----
-networks:
-  pharmacy:
-    ipam:
-      driver: default
+$ sudo dnf install -y podman-compose
 ----
 
-Now add our services:
+== 2. Defining the Application Stack (compose.yml)
 
-.compose.yaml
-[source,yaml]
-----
-services:
+The `compose.yml` file declaratively defines all parts of our application: services, networking, and persistent volumes. We are using the unified `pharmacy:v5` image.
 
-  billing_service:
-    image: localhost/pharmacy:v5
-    restart: always
-    deploy:
-      replicas: 1
-    ports:
-      - "5004:5004"
-    command: billing_service.py
-    networks:
-      - pharmacy
-    detach: true
+== 3. Deployment and Lifecycle Management
 
-  customer_service:
-    image: localhost/pharmacy:v5
-    restart: always
-    deploy:
-      replicas: 1
-    ports:
-      - "5003:5003"
-    command: customer_service.py
-    networks:
-      - pharmacy
-    detach: true
+Compose manages the creation of volumes, networks, and containers automatically based on the `compose.yaml` file.
 
-  inventory_service:
-    image: localhost/pharmacy:v5
-    restart: always
-    deploy:
-      replicas: 1
-    ports:
-      - "5001:5001"
-    command: inventory_service.py
-    networks:
-      - pharmacy
-    detach: true
+=== Bring Services Up
 
-  order_service:
-    image: localhost/pharmacy:v5
-    restart: always
-    deploy:
-      replicas: 1
-    ports:
-      - "5002:5002"
-    command: order_service.py
-    networks:
-      - pharmacy
-    volumes:
-      - data:/data
-    detach: true
-----
-
-Bring our services up in detached mode using the following command:
+Bring our services up in detached mode. Compose will automatically create the network, create the volume, and start all four containers simultaneously.
 
 [source,shell]
 ----
 $ podman-compose up -d
 ----
 
-And bring it down with the following command:
+NOTE: Notice that new networks, volumes, and containers were created, all typically prepended with the name of our project directory (e.g., `lab12_pharmacy_app_network`).
+
+=== Verify Application Health
+
+Verify connectivity and the complex workflow (Order $\rightarrow$ Inventory) is working:
+
+[source,shell]
+----
+# 1. Test external access (Inventory Service 5001)
+$ curl http://127.0.0.1:5001/view_inventory
+
+# 2. Place an order via port 5002 (Tests persistence and inter-service communication)
+$ curl -X POST \
+    -H "Content-Type: application/json" \
+    -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
+    http://localhost:5002/place_order
+----
+
+=== Bring Services Down and Clean Up
+
+Use the following command to stop and remove all services, cleaning up the network as well.
 
 [source,shell]
 ----
 $ podman-compose down
 ----
 
-Notice that new networks, volumes, and containers were created, all prepended with the name of our project directory.
+== 4. Best Practice: Tagging and Versioning
 
-There is one more thing to consider. When versioning, we keep using tags like v1 or v2, but that will force us to constantly come back to the compose file whenever a new version is released, it's always a good idea to keep a copy of the latest version of everything tagged as latest so we don’t need to be specific on the version.
+When versioning, constantly updating the tag in the `compose.yml` file (e.g., changing from `:v5` to `:v6`) is tedious. A better practice is to maintain a `latest` tag that always points to the current production-ready version.
 
 [source,shell]
 ----
 $ podman tag localhost/pharmacy:v5 localhost/pharmacy:latest
 ----
+
+You can then change the `image` entry in your `compose.yml` to `image: localhost/pharmacy:latest`, ensuring you only update the tag once when you build a new version, not every time you deploy.
