@@ -1,10 +1,14 @@
-= Lab 9 - Isolate the Application
+= Lab 9 - Isolate the Application (Bridge Networking)
+:tip-caption: 💡 TIP
+:warning-caption: ⚠️ WARNING
 
-Until now, we have been using the host network when running containers to remove isolation between containers and utilize the host network, thereby avoiding the need to deal with ports and other network-related configurations.
+Until now, we have been using the Host Network Mode (`--network host`). This method is simple but **removes all network isolation**, making the containers highly insecure.
 
-This time, let’s use a different approach. Let’s create a network specifically for our application to work in isolation from the hosts but not from the components of the application itself.
+The goal of this lab is to create a dedicated network for our application, allowing the containers to work in isolation from the host but still communicate with each other internally.
 
-Create a network:
+== 1. Creating the Isolated Bridge Network
+
+We will create a custom bridge network named `pharmacy`. Podman will automatically manage IP addressing (DHCP) within this new, isolated subnet.
 
 [source,shell]
 ----
@@ -12,9 +16,19 @@ $ podman network create pharmacy
 $ podman network inspect pharmacy
 ----
 
-Now, since the source code of our application currently attempts to use the host network, Flask binds to localhost (127.0.0.1) by default, and therefore it will only be reachable from within the container or another container within the same subnet. But want to reach it from the local machine (host), we need Flask to bind to all IPs:
+NOTE: The `inspect` command shows the new subnet (e.g., 10.88.0.0/16) and the bridge name created on your host system.
 
-So we will change the line on each Python script as follows:
+== 2. Preparing the Application for Isolation
+
+When using an isolated network, the application inside the container must listen correctly to receive forwarded traffic from the host.
+
+=== Why Change the Code to `host='0.0.0.0'`? 🏆
+
+By default, Flask binds to `127.0.0.1` (localhost), meaning it only accepts connections originating from *inside its own network namespace*.
+
+Binding to **`0.0.0.0` (All Interfaces)** tells the application to accept connections on the virtual network interface assigned by Podman. When we use port mapping (`-p 5001:5001`), Podman forwards traffic from the host into the container, and the application must be listening on `0.0.0.0` to accept it.
+
+We need to modify the `app.run()` call in **all four** Python scripts:
 
 [source,python]
 ----
@@ -28,37 +42,66 @@ So we will change the line on each Python script as follows:
     app.run(host='0.0.0.0',port=5001)
 ----
 
-*Why Change the Code to host='0.0.0.0'?*
+=== Rebuild the Final Image
 
-In our Python scripts, we added (host='0.0.0.0') to the app.run() call. This is a crucial change when moving from the host network to an isolated bridge network with port mapping.
-
-- By default, Flask binds to 127.0.0.1 (localhost). This means the application will only accept connections that originate from inside its own network namespace.
-- Binding to 0.0.0.0 (All Interfaces) tells the application to accept connections on all of its available network interfaces.
-
-When we use port mapping (e.g., -p 5001:5001), Podman forwards traffic from the host into the container's isolated network. For our application inside the container to receive this forwarded traffic, it must be listening on 0.0.0.0.
-
-Build version 5 of our application
+Since we modified the source code, we must rebuild the image to include the `0.0.0.0` binding fix.
 
 [source,shell]
 ----
 $ podman build -t pharmacy:v5 .
 ----
 
-Create the containers using the latest version:
+== 3. Deploying to the Isolated Network
+
+We now deploy the containers using two critical flags:
+1.  `--network pharmacy`: Connects the container to our new, isolated subnet.
+2.  `-p HOST_PORT:CONTAINER_PORT`: Exposes the service to the host machine for external access.
 
 [source,shell]
 ----
+$ podman stop -a
 $ podman run --rm --name inventory_service --network pharmacy -p 5001:5001 -d localhost/pharmacy:v5 inventory_service.py
 $ podman run --rm --name customer_service --network pharmacy -p 5003:5003  -d localhost/pharmacy:v5 customer_service.py
 $ podman run --rm --name billing_service --network pharmacy -p 5004:5004  -d localhost/pharmacy:v5 billing_service.py
-$ podman run --rm --name order_service --network pharmacy -v data:/data:rw -p 5002:5002  -d localhost/pharmacy:v5 order_service.py
+$ podman run --rm --name order_service --network pharmacy -v pharmacy_orders_data:/data:rw -p 5002:5002  -d localhost/pharmacy:v5 order_service.py
 ----
 
-Test the service:
+== 4. Testing the Isolated Application
+
+We now test that both external access (Host --> Container via port map) and internal communication (Container --> Container via network bridge) are working.
+
+=== Test External Host Access
+
+We verify that the host can reach the Inventory Service via the mapped port:
 
 [source,shell]
 ----
-$ ansible-playbook play.yml
+$ curl http://127.0.0.1:5001/view_inventory
+
+{"inventory":{"medicine_A":{"price":10,"stock":100},...}}
 ----
 
-We have a fully isolated application running on its own network with persistent storage and a fully functional application.
+=== Test Inter-Service Communication
+
+Place an order. This requires the Order Service (running on its *internal* network address) to call the Inventory Service (also on its *internal* network address), and finally expose the result back to the host via the mapped port.
+
+[source,shell]
+----
+# Place a test order via port 5002
+$ curl -X POST \
+    -H "Content-Type: application/json" \
+    -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
+    http://localhost:5002/place_order
+
+# Verify the order exists
+$ curl http://127.0.0.1:5002/view_orders
+----
+
+We have achieved a fully isolated and persistent application that runs on its own secure network, using port mapping to expose only the necessary services to the host.
+
+== 5. Terminating the Lab
+
+[source,shell]
+----
+$ podman stop -a
+----
