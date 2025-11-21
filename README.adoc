@@ -1,64 +1,71 @@
-= Lab 9 - Isolate the Application
+= Lab 10 - Troubleshooting the Application
 
-Until now, we have been using the host network when running containers to remove isolation between containers and utilize the host network, thereby avoiding the need to deal with ports and other network-related configurations.
-
-This time, let’s use a different approach. Let’s create a network specifically for our application to work in isolation from the hosts but not from the components of the application itself.
-
-Create a network:
+Let’s review the logs of the application using the LNAV LogFile Navigator, which we will start by installing:
 
 [source,shell]
 ----
-$ podman network create pharmacy
-$ podman network inspect pharmacy
+$ sudo dnf install -y lnav
 ----
 
-Now, since the source code of our application currently attempts to use the host network, Flask binds to localhost (127.0.0.1) by default, and therefore it will only be reachable from within the container or another container within the same subnet. But want to reach it from the local machine (host), we need Flask to bind to all IPs:
-
-So we will change the line on each Python script as follows:
-
-[source,python]
-----
-# On billing_service.py
-    app.run(host='0.0.0.0',port=5004)
-# On customer_service.py
-    app.run(host='0.0.0.0',port=5003)
-# On order_service.py
-    app.run(host='0.0.0.0',port=5002)
-# On inventory_service.py
-    app.run(host='0.0.0.0',port=5001)
-----
-
-*Why Change the Code to host='0.0.0.0'?*
-
-In our Python scripts, we added (host='0.0.0.0') to the app.run() call. This is a crucial change when moving from the host network to an isolated bridge network with port mapping.
-
-- By default, Flask binds to 127.0.0.1 (localhost). This means the application will only accept connections that originate from inside its own network namespace.
-- Binding to 0.0.0.0 (All Interfaces) tells the application to accept connections on all of its available network interfaces.
-
-When we use port mapping (e.g., -p 5001:5001), Podman forwards traffic from the host into the container's isolated network. For our application inside the container to receive this forwarded traffic, it must be listening on 0.0.0.0.
-
-Build version 5 of our application
+Use it against any of the running containers as follows:
 
 [source,shell]
 ----
-$ podman build -t pharmacy:v5 .
+$ sudo journalctl CONTAINER_NAME=order_service | lnav
 ----
 
-Create the containers using the latest version:
+Monitor the performance of the application containers. The running processes can be seen with the following command:
 
 [source,shell]
 ----
-$ podman run --rm --name inventory_service --network pharmacy -p 5001:5001 -d localhost/pharmacy:v5 inventory_service.py
-$ podman run --rm --name customer_service --network pharmacy -p 5003:5003  -d localhost/pharmacy:v5 customer_service.py
-$ podman run --rm --name billing_service --network pharmacy -p 5004:5004  -d localhost/pharmacy:v5 billing_service.py
-$ podman run --rm --name order_service --network pharmacy -v data:/data:rw -p 5002:5002  -d localhost/pharmacy:v5 order_service.py
+$ podman top order_service
 ----
 
-Test the service:
+Performance statistics can be found using the following command:
+
+[source,shell]
+----
+$ podman stats
+----
+
+However, when using containers, we should always strive for self-healing processes. If you remember, in our previous modules, we continued to verify the availability of the application by testing it, like:
 
 [source,shell]
 ----
 $ ansible-playbook play.yml
 ----
 
-We have a fully isolated application running on its own network with persistent storage and a fully functional application.
+What if we can add the health check at runtime?
+
+[source,shell]
+----
+$ podman run --rm --name inventory_service --network pharmacy -p 5001:5001 \
+    --health-cmd='curl http://0.0.0.0:5001/view_inventory || exit 1' \
+    --health-interval=30s -d localhost/pharmacy:v5 inventory_service.py
+----
+
+Now we can run the health check at any time, and if there is no answer, it means we are OK!
+
+After running the container with a health check, inspect its status with podman ps:
+
+[source,shell]
+----
+$ podman ps
+CONTAINER ID  IMAGE                  COMMAND              CREATED   STATUS            NAMES
+c8d...        localhost/pharmacy:v5  inventory_service.py 15s ago   Up 14s (healthy)  inventory_service
+----
+
+Notice the status column includes the health of the container, such as (healthy). This gives you an immediate, at-a-glance view of your application's state.
+
+[source,shell]
+----
+$ podman healthcheck run inventory_service
+----
+
+Even if we don’t run it manually, the health check is continuously being executed
+
+[source,shell]
+----
+$ podman inspect --format='{{json .State.Health.Status}}' inventory_service
+"healthy"
+----
