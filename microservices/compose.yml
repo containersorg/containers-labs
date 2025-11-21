@@ -1,0 +1,57 @@
+version: "4"
+
+volumes:
+  data:
+
+networks:
+  pharmacy:
+    ipam:
+      driver: default
+
+services:
+
+  billing_service:
+    image: localhost/pharmacy:v5
+    restart: always
+    deploy:
+      replicas: 1
+    ports:
+      - 5004:5004
+    command: billing_service.py
+    networks:
+      - pharmacy
+
+  customer_service:
+    image: localhost/pharmacy:v5
+    restart: always
+    deploy:
+      replicas: 1
+    ports:
+      - 5003:5003
+    command: customer_service.py
+    networks:
+      - pharmacy
+
+  inventory_service:
+    image: localhost/pharmacy:v5
+    restart: always
+    deploy:
+      replicas: 1
+    ports:
+      - 5001:5001
+    command: inventory_service.py
+    networks:
+      - pharmacy
+
+  order_service:
+    image: localhost/pharmacy:v5
+    restart: always
+    deploy:
+      replicas: 1
+    ports:
+      - 5002:5002
+    command: order_service.py
+    networks:
+      - pharmacy
+    volumes:
+      - data:/data

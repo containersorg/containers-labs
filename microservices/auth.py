@@ -1,21 +1,22 @@
 #!/usr/bin/python
+import secrets
+import os
 
-class SimpleAuthentication:
-   """Authentication class"""
+class SecureAuthentication:
    def __init__(self):
-      """Hardcoding a sample username and password for demonstration purposes"""
-      self.valid_username = "user123"
-      self.valid_password = "password123"
+      """Load credentials from environment variables"""
+      self.valid_username = os.getenv("VALID_USERNAME")
+      self.valid_password = os.getenv("VALID_PASSWORD")
    def authenticate(self, username, password):
-      """Verify credentials"""
-      if username == self.valid_username and password == self.valid_password:
+      """Use secrets.compare_digest for constant-time comparison"""
+      if username == self.valid_username and secrets.compare_digest(password, self.valid_password):
          return True
       else:
          return False
 
 if __name__ == "__main__":
    # Create an instance of SimpleAuthentication
-   authentication = SimpleAuthentication()
+   authentication = SecureAuthentication()
    # Get username and password from the user
    username = input("Enter your username: ")
    password = input("Enter your password: ")
@@ -23,3 +24,4 @@ if __name__ == "__main__":
       print(f"Welcome, {username}! Authentication successful.")
    else:
       print("Error: Invalid username or password. Authentication failed.")
+
