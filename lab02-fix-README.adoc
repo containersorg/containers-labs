@@ -1,0 +1,57 @@
+= Lab 02: Fixing the Microservices Application
+
+== Enabling value retention
+
+Notice something went wrong as results are returning empty in the `view_orders` service; it appears to be failing to store the order. Let's address this issue!
+
+NOTICE: There is no need to stop the service at this point. A new version of the order_service.py file has been sent by the engineer team and is already in our microservices directory.
+
+> We are responsible for updating the service but not the code itself.
+
+== Updating the Order Service
+
+Go to the terminal where the order_service is running. We will stop the current service and replace it with the updated version.
+
+Next, use the (`CTRL+C`) key combination to halt the service, and immediately restart the service using the new version in the same terminal with the following command:
+
+[source,shell]
+----
+$ python3 order_service.py
+----
+
+Now, proceed to run the a test:
+
+// TODO: add test instructions
+
+Great! We have successfully transitioned to the microservices version of our application.
+
+.*Stop and Think!*
+****
+image::think.png["Stop and Think",50,50,align="center"] 
+
+Our new order service successfully placed an order, but it never checked if the medicine was in stock! In our monolithic app, this check occurred automatically because it was a single program. Now that they are separate services, how can the order service ask the inventory service about its stock? This is the central challenge—and benefit—of microservices: inter-service communication.
+****
+
+== Enabling Inter-Service Communication
+
+To make our microservices truly functional, they need to talk to each other. We will modify the `order_service` to call the `inventory_service's` API to check stock before placing an order.
+
+A new version of the order service code has been provided to us by the engineering team and was placed under the `fix` directory in our project.
+
+. Make a backup copy of the existing `order_service.py` file in the `microservice` directory, just in case we need to revert back.
+. Move the `fix/order_service.py` file to the `microservice` directory to replace the existing order service code.
+
+Now, as we did in our previous fix, stop the running `order_service` and run this new version. 
+
+Try to make an order with more items than those we know are in stock. You will receive an "Insufficient stock" error.
+
+// TODO: add test instructions
+
+[source,shell]
+----
+$ 
+----
+
+This demonstrates a true (simple) communicating microservices architecture.
+
+image::micro2.png[450,450,align=center]

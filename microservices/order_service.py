@@ -1,5 +1,5 @@
-"""service for orders"""
-from flask import Flask, json
+"""service for orders with value retention"""
+from flask import Flask, json, request
 
 app = Flask(__name__)
 
@@ -9,8 +9,20 @@ orders = []
 @app.route('/place_order', methods=['POST'])
 def place_order():
     """Receives orders"""
-    # Process order logic
-    # ...
+    order_details = request.json
+    medicine_name = order_details['medicine']
+    requested_quantity = order_details['quantity']
+
+    # Prepare order details
+    order = {
+        'customer_id': order_details['customer_id'],
+        'medicine': medicine_name,
+        'quantity': requested_quantity,
+        'status': 'Pending'
+    }
+
+    orders.append(order)
+
     return json.dumps({'message': 'Order placed successfully'}, indent=4)
 
 # Endpoint to view orders
