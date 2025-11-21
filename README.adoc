@@ -1,56 +1,33 @@
-= Lab 6 - A More Automated Approach
+= Lab 6 - A More Automated Approach (Containerfiles)
+:tip-caption: 💡 TIP
+:warning-caption: ⚠️ WARNING
 
-Up to this point, our approach has been implemented *manually*; every single step takes time, and the only way to repeat the process is to repeat it completely. This is, of course, not the most efficient method. However, we can make use of `Containerfiles` to automate the process.
+Up to this point, our approach has been implemented *manually*. This is not efficient, as the only way to repeat the process is to manually execute dozens of shell commands.
 
-To containerize each microservice, you can create a Containerfile for each service as follows:
+We will now use **Containerfiles** (sometimes called Dockerfiles) to automate the entire process. A Containerfile is a text file containing declarative instructions for building an image.
+
+== The Declarative Approach
+
+Notice how each `Containerfile` is an automated replica of the manual steps we performed in Lab 3:
+
+1.  Installing dependencies (`RUN dnf install...`)
+2.  Copying the source code (`COPY...`)
+3.  Defining the startup command (`CMD...`)
 
 .Containerfile_inventory_service
 [source,dockerfile]
 ----
 FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
+RUN dnf install -yqq python3 python3-pip python3-requests
 COPY inventory_service.py .
 CMD ["python3", "inventory_service.py"]
 ----
 
-.Containerfile_order_service
-[source,dockerfile]
-----
-FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
-COPY order_service.py .
-CMD ["python3", "order_service.py"]
-----
+> ... other Containerfiles follow the same structure and pattern ...
 
-.Containerfile_customer_service
-[source,dockerfile]
-----
-FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
-COPY customer_service.py .
-CMD ["python3", "customer_service.py"]
-----
+== 1. Building the Images Automatically
 
-.Containerfile_billing_service
-[source,dockerfile]
-----
-FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
-COPY billing_service.py .
-CMD ["python3", "billing_service.py"]
-----
-
-Notice that each of the Containerfiles follows the same steps as we did when creating the containers manually:
-
-. installing dependencies
-. copying the source code
-. running the service
-
-To build these images, navigate to the directory containing each service's `Containerfile` and run the following command:
+To build these images, navigate to the directory containing each service's source code and run the following commands.
 
 [source,shell]
 ----
@@ -60,21 +37,34 @@ $ podman build -t customer-service -f Containerfile_customer_service .
 $ podman build -t billing-service -f Containerfile_billing_service .
 ----
 
-Note that we are no longer tagging our images as manual because they are being created automatically.
+TIP: Did you notice how fast the building process was after the first image? Since images are built in layers, the repetitive steps (`FROM fedora`, `RUN dnf install...`) are **cached** and do not have to be processed again. This is a core efficiency of containerization.
+
+=== Verification of Built Images
 
 [source,shell]
 ----
 $ podman images
-REPOSITORY                         TAG         IMAGE ID      CREATED         SIZE
-localhost/billing-service          latest      d5f2a420aba5  19 seconds ago  480 MB
-localhost/customer-service         latest      3744e51347f2  24 seconds ago  480 MB
-localhost/order-service            latest      1ae01d6ddef5  42 seconds ago  480 MB
-localhost/inventory-service        latest      8a043ac8b906  59 seconds ago  480 MB
+REPOSITORY                          TAG         IMAGE ID      CREATED             SIZE
+localhost/billing-service           latest      d5f2a420aba5  19 seconds ago      480 MB
+# ... list of all four new images ...
 ----
 
-Did you notice how fast the building process was? Since images are built in layers, the repetitive layers do not have to be processed twice, and therefore, the repetitive steps are skipped.
+== 2. Deploying Services from Containerfiles
 
-Once ready, we can execute our container as follows:
+Since we defined a `CMD` instruction in each `Containerfile`, we no longer need to specify the `python3 service.py` command manually when running the container. The image already knows what command to execute.
+
+=== Stop Previous Containers
+
+WARNING: Ensure the containers from Lab 5 are stopped to free up ports 5001-5004.
+
+[source,shell]
+----
+$ podman stop -a
+----
+
+=== Launch the Services (Using Automatic CMD)
+
+Run all four containers using the images we just built. The `podman run` command is now cleaner and shorter:
 
 [source,shell]
 ----
@@ -84,6 +74,31 @@ $ podman run --rm --name customer_service --network host -d localhost/customer-s
 $ podman run --rm --name billing_service --network host -d localhost/billing-service
 ----
 
-== Testing the application
+== 3. Testing the Automated Deployment
 
-// TODO: Add testing instructions
+The application should function identically, but the process is now **repeatable and standardized**. We confirm inter-service communication (Order $\rightarrow$ Inventory) is working.
+
+=== Cross-Service Validation (Order Placement)
+
+Use a free terminal to place and verify an order.
+
+[source,shell]
+----
+# 1. Place a test order, targeting port 5002
+$ curl -X POST \
+    -H "Content-Type: application/json" \
+    -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
+    http://localhost:5002/place_order
+
+# 2. Verify the order exists by querying the Order Processing Service
+$ curl http://127.0.0.1:5002/view_orders
+----
+
+== 4. Terminating the Lab
+
+WARNING: Terminate the services before concluding the module.
+
+[source,shell]
+----
+$ podman stop -a
+----
