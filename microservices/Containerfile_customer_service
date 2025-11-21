@@ -1,5 +1,0 @@
-FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
-COPY customer_service.py .
-CMD ["python3", "customer_service.py"]

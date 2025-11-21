@@ -1,89 +1,42 @@
-= Lab 6 - A More Automated Approach
+= Lab 7 -
 
-Up to this point, our approach has been implemented *manually*; every single step takes time, and the only way to repeat the process is to repeat it completely. This is, of course, not the most efficient method. However, we can make use of `Containerfiles` to automate the process.
+But wait! Just as we did in the manual procedure, we created a single image to run all the containers. Why don’t we do the same here?
 
-To containerize each microservice, you can create a Containerfile for each service as follows:
-
-.Containerfile_inventory_service
+.Containerfile
 [source,dockerfile]
 ----
 FROM fedora
 RUN dnf install -yqq python3 pip
 RUN pip install Flask
-COPY inventory_service.py .
-CMD ["python3", "inventory_service.py"]
+COPY *.py .
+ENTRYPOINT ["python3"]
 ----
 
-.Containerfile_order_service
-[source,dockerfile]
-----
-FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
-COPY order_service.py .
-CMD ["python3", "order_service.py"]
-----
+Notice we have changed our image slightly to copy all the source code files and change the `CMD` for an `ENTRYPOINT` that will allow us to use the `CMD` at runtime to selectively run a specific python script that will be *taken as an argument*, as follows:
 
-.Containerfile_customer_service
-[source,dockerfile]
-----
-FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
-COPY customer_service.py .
-CMD ["python3", "customer_service.py"]
-----
-
-.Containerfile_billing_service
-[source,dockerfile]
-----
-FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
-COPY billing_service.py .
-CMD ["python3", "billing_service.py"]
-----
-
-Notice that each of the Containerfiles follows the same steps as we did when creating the containers manually:
-
-. installing dependencies
-. copying the source code
-. running the service
-
-To build these images, navigate to the directory containing each service's `Containerfile` and run the following command:
+First, we build the image:
 
 [source,shell]
 ----
-$ podman build -t inventory-service -f Containerfile_inventory_service .
-$ podman build -t order-service -f Containerfile_order_service .
-$ podman build -t customer-service -f Containerfile_customer_service .
-$ podman build -t billing-service -f Containerfile_billing_service .
+$ podman build -t pharmacy:v2 .
 ----
 
-Note that we are no longer tagging our images as manual because they are being created automatically.
+Notice that since we called the container file exactly `Containerfile`, there is no need to specify the file name at build time
+
+Now we run the containers:
 
 [source,shell]
 ----
-$ podman images
-REPOSITORY                         TAG         IMAGE ID      CREATED         SIZE
-localhost/billing-service          latest      d5f2a420aba5  19 seconds ago  480 MB
-localhost/customer-service         latest      3744e51347f2  24 seconds ago  480 MB
-localhost/order-service            latest      1ae01d6ddef5  42 seconds ago  480 MB
-localhost/inventory-service        latest      8a043ac8b906  59 seconds ago  480 MB
+$ podman run --rm --name inventory_service --network host -d localhost/pharmacy:v2 inventory_service.py
+$ podman run --rm --name order_service --network host -d localhost/pharmacy:v2 order_service.py
+$ podman run --rm --name customer_service --network host -d localhost/pharmacy:v2 customer_service.py
+$ podman run --rm --name billing_service --network host -d localhost/pharmacy:v2 billing_service.py
 ----
 
-Did you notice how fast the building process was? Since images are built in layers, the repetitive layers do not have to be processed twice, and therefore, the repetitive steps are skipped.
-
-Once ready, we can execute our container as follows:
+Test a service to be sure is working
 
 [source,shell]
 ----
-$ podman run --rm --name inventory_service --network host -d localhost/inventory-service
-$ podman run --rm --name order_service --network host -d localhost/order-service
-$ podman run --rm --name customer_service --network host -d localhost/customer-service
-$ podman run --rm --name billing_service --network host -d localhost/billing-service
+$ curl http://0.0.0.0:5001/view_inventory
+{"inventory":{"medicine_A":{"price":10,"stock":100},"medicine_B":{"price":15,"stock":50}}}
 ----
-
-== Testing the application
-
-// TODO: Add testing instructions

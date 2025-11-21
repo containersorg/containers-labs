@@ -1,5 +1,0 @@
-FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
-COPY inventory_service.py .
-CMD ["python3", "inventory_service.py"]
