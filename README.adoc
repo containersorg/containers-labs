@@ -1,163 +1,131 @@
-= Lab-01 - Monolithic vs Microservices Architectures
+= Lab-01 - Monolithic
+:tip-caption: 💡 TIP
+:warning-caption: ⚠️ WARNING
 
-== Monolithic Architecture
+== 1. Architectural Overview: Monolith
 
-Imagine a real-world scenario where we model a monolithic architecture for an application within a pharmaceutical company. In this simplified emulation, we'll conceptualize the application as running on a single server. For the sake of clarity, we will avoid delving into the intricacies of the actual code and instead focus on understanding the application's functionalities and the 'big picture' it presents.
+Imagine a real-world scenario where we model a monolithic architecture for a pharmaceutical company's application. In this emulation, *all* application code, business logic, and services run together on a single server. This tightly coupled design is known as a **Monolith**.
 
-image::pharmacy.png[200,200,align=center]
+For the sake of clarity, we will avoid delving into the intricacies of the actual Python code and instead focus on understanding the application's single operational unit.
 
-== Working Environment
+image::images/pharmacy.png[200,200,align=center]
 
-Always begin projects by designating a dedicated directory to reside, in this repository the `monolithic` directory hosts our application.
+== 2. Setting Up the Working Environment
 
-This pharmacy application created in Python emulates the scenario of a pharmaceutical application on a single server running as a single service.
+We will first run the application directly on the host machine to understand the dependency challenges inherent in monolithic architecture.
 
-== Pharmacy Application Overview
+NOTE: The `monolithic` directory hosts our application files for this lab.
 
-Quick code explanation: This code is a mockup of an API application that receives requests to handle activities such as *placing orders*, *viewing inventory*, *viewing orders*, and *viewing customers* in a pharmacy system. Since this is a mockup, all the required data is hardcoded.
+=== Application Pre-requisites (Host Installation)
 
-== Application Pre-requisites
-
-Given that our application is developed in `Python` using the `FLASK` framework, our initial requirement is to have the `Python` language and the `pip` package manager installed to facilitate the installation of the `Flask` framework and the `requests` library.
+Given that our pharmacy application is developed in `Python` using the `FLASK` framework, we must manually install all dependencies directly onto our host system.
 
 [source,shell]
 ----
+# 1. Install Python 3 and the PIP package manager
 $ sudo dnf install -y python3
 $ sudo dnf install -y pip
+
+# 2. Ensure pip is up-to-date
 $ pip install --upgrade pip
+
+# 3. Install the required Python frameworks/libraries
 $ pip install Flask
 $ pip install requests
 ----
 
-== Executing the Application
+== 3. Executing the Application
 
-Within this monolithic framework, we consolidate all functionalities and other services encapsulated within a singular Flask application. This straightforward integration involves managing all operations within a single script.
+In this monolithic framework, all functionalities (orders, inventory, customer lookup) are consolidated and encapsulated within a single Python script.
+
+NOTE: The Flask debugger will utilize the current terminal session, meaning you will need a second terminal to run the test commands.
 
 Run the application with the following command:
 
 [source,shell]
 ----
 $ python3 pharmacy.py
+ * Running on http://127.0.0.1:5000 (Press CTRL+C to quit)
 ----
 
-While the application runs on notice is utilizes the port `5000`, also notice the Flask debugger currently occupies our terminal. Consequently, we need to open a new terminal to test the application through direct API calls using `CURL` commands.
+While the application runs, notice that the Flask debugger currently occupies your terminal. Consequently, **open a new terminal window** (Terminal B) to test the application through direct API calls.
 
-image::mono.png[200,200,align=center]
+image::images/mono.png[200,200,align=center]
 
-== Testing the Application
+== 4. Testing the Monolithic API
 
-Once the Flask web application is operational, it's usually accessible at the http://localhost:5000/ URL by default.
+The Flask web application is now operational and accessible via the loopback address (`127.0.0.1`) on port `5000`. We will use `CURL` to verify the application endpoints.
 
-Tools such as Postman or CURL can be employed to send requests to various endpoints defined in the Flask application (e.g., `/place_order`, `/view_inventory`, `/view_orders`, `/view_customer/<customer_id>`).
+TIP: All API calls are directed to the *same* application on the *same* port, reflecting the monolithic structure.
 
-NOTE: Keep in mind that this example involves running a basic Flask server locally solely for testing purposes. In a production environment, the application is typically deployed on a dedicated server and integrated with a database for robust data storage and management.
+=== Initial Connectivity Check
 
-Initiate the testing phase with a straightforward direct call to our application:
+Initiate the testing phase with a straightforward direct call to verify connectivity and version:
 
 [source,shell]
 ----
+# Run this command in Terminal B
 $ curl http://127.0.0.1:5000
 Pharmacy v1
 ----
 
-While we can confirm that the application is responsive, the passed instruction only prints the version.
+We confirm the application is responsive.
 
-Try again, this time focusing on verifying the inventory:
+=== Retrieve Inventory and Customer Data
+
+Now, verify the inventory, orders, and customer details, noting that all data lives within this single application instance:
 
 [source,shell]
 ----
+# Verify the hardcoded inventory data
 $ curl http://127.0.0.1:5000/view_inventory
 
-{
-  "inventory": {
-    "medicine_A": {
-      "price": 10,
-      "stock": 100
-    },
-    "medicine_B": {
-      "price": 15,
-      "stock": 50
-    }
-  }
-}
-----
-
-Making direct calls to an API is a straightforward process. Now, leverage the `view_customer` function to retrieve and display information about our customers:
-
-[source,shell]
-----
+# Retrieve John Doe's customer details
 $ curl http://127.0.0.1:5000/view_customer/customer_id_1
-{
-  "customer_details": {
-    "address": "123 Main St",
-    "name": "John Doe"
-  }
-}
-
-$ curl http://127.0.0.1:5000/view_customer/customer_id_2
-{
-  "customer_details": {
-    "address": "456 Elm St",
-    "name": "Alice Smith"
-  }
-}
 ----
 
-Attempt to display our active orders, although we are aware that they are currently empty:
+=== Place a New Order (POST Request)
+
+Since order placement modifies data, it requires the HTTP POST method and the correct JSON `Content-Type` header.
 
 [source,shell]
 ----
+# 1. Check existing orders (should be empty array: [])
 $ curl http://127.0.0.1:5000/view_orders
 
-{
-  "orders": []
-}
-----
-
-Proceeding to introduce an order into the system. If we carefully examine our application code, we'll observe that order placement utilizes the POST method.
-
-[source,shell]
-----
+# 2. Place a new order using POST method
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
     http://localhost:5000/place_order
-
-{
-  "message": "Order placed successfully",
-  "order_details": {
-    "customer_id": "customer_id_1",
-    "medicine": "medicine_A",
-    "quantity": 5,
-    "status": "Pending",
-    "total_price": 50
-  }
-}
 ----
 
-Consequently, we can retrieve and display our active orders once again:
+=== Verify the Order Status
+
+Finally, confirm that the order was successfully added and persisted within the single running application:
 
 [source,shell]
 ----
 $ curl http://127.0.0.1:5000/view_orders
-
 {
   "orders": [
     {
-      "customer_id": "customer_id_1",
-      "medicine": "medicine_A",
-      "quantity": 5,
-      "status": "Pending",
-      "total_price": 50
+      # ... output includes the new order details ...
     }
   ]
 }
 ----
 
-In a more realistic scenario, our application will feature a distributed architecture with high availability and resilience capabilities, utilizing multiple databases and servers to host different components of the solution.
+== 5. Architectural Discussion: The Limits of Monoliths
+
+In this simple example, all components—order processing, inventory, and customer lookup—are managed by a single Python process.
+
+If the *Inventory* code section had a crash or a memory leak, the entire application, including *Order Processing* and the *Customer API*, would fail, requiring a complete server restart. This is the central weakness we aim to solve with distributed (microservices) architecture.
 
 image::mono-servers.png[600,600,align=center]
 
-== Terminating the Application
+== 6. Terminating the Application
 
-Before continuing, ensure the termination of the monolithic application running on port `5000` by using the (`CTRL+C`) key combination in the first opened terminal where the Flask application is currently attached.
+WARNING: Before continuing to the next lab, you **must** terminate the monolithic application running on port `5000`.
+
+Use the (`CTRL+C`) key combination in the first opened terminal (Terminal A) where the Flask application is currently attached.
