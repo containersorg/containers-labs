@@ -1,180 +1,64 @@
-= Lab 8 - Making Data Persistent
+= Lab 9 - Isolate the Application
 
-The engineering team has come back to you with a new requirement for the pharmacy application. They want to ensure that the orders placed by customers are stored persistently, so that even if the order service is restarted or crashes, the order data is not lost.
+Until now, we have been using the host network when running containers to remove isolation between containers and utilize the host network, thereby avoiding the need to deal with ports and other network-related configurations.
 
-To achieve this, they have modified the `order_service.py` to store orders in a file-based database (JSON file) instead of keeping them in memory. This way, the orders will persist even if the service is restarted.
+This time, let’s use a different approach. Let’s create a network specifically for our application to work in isolation from the hosts but not from the components of the application itself.
 
-In this version:
-
-- The ORDERS_FILE constant is defined to specify the filename for storing orders, and we are using (/data/orders.json) as our default database.
-- Two functions (read_orders and write_orders) are introduced to read and write orders to the file.
-- Before processing orders, the application reads existing orders from the file and updates them accordingly.
-
-This way, your orders are persisted across server restarts, making the application more resilient to restarts and downtime.
-
-Since we have a new version of code, we need to rebuild the images and create new containers:
-
-First, we build the image:
+Create a network:
 
 [source,shell]
 ----
-$ podman build -t pharmacy:v3 .
+$ podman network create pharmacy
+$ podman network inspect pharmacy
 ----
 
-Now we run the containers, but since only the `order_service` was modified, let’s stop just that one and run it again using the new version:
+Now, since the source code of our application currently attempts to use the host network, Flask binds to localhost (127.0.0.1) by default, and therefore it will only be reachable from within the container or another container within the same subnet. But want to reach it from the local machine (host), we need Flask to bind to all IPs:
+
+So we will change the line on each Python script as follows:
+
+[source,python]
+----
+# On billing_service.py
+    app.run(host='0.0.0.0',port=5004)
+# On customer_service.py
+    app.run(host='0.0.0.0',port=5003)
+# On order_service.py
+    app.run(host='0.0.0.0',port=5002)
+# On inventory_service.py
+    app.run(host='0.0.0.0',port=5001)
+----
+
+*Why Change the Code to host='0.0.0.0'?*
+
+In our Python scripts, we added (host='0.0.0.0') to the app.run() call. This is a crucial change when moving from the host network to an isolated bridge network with port mapping.
+
+- By default, Flask binds to 127.0.0.1 (localhost). This means the application will only accept connections that originate from inside its own network namespace.
+- Binding to 0.0.0.0 (All Interfaces) tells the application to accept connections on all of its available network interfaces.
+
+When we use port mapping (e.g., -p 5001:5001), Podman forwards traffic from the host into the container's isolated network. For our application inside the container to receive this forwarded traffic, it must be listening on 0.0.0.0.
+
+Build version 5 of our application
 
 [source,shell]
 ----
-$ podman stop order_service
-$ podman run --rm --name order_service --network host -d localhost/pharmacy:v3 order_service.py
+$ podman build -t pharmacy:v5 .
 ----
 
-Wait! Something is wrong! Let’s investigate:
-
-1. Run the containers without the (--rm) option to avoid losing the traces of the execution.
+Create the containers using the latest version:
 
 [source,shell]
 ----
-$ podman run --name order_service --network host -d localhost/pharmacy:v3 order_service.py
+$ podman run --rm --name inventory_service --network pharmacy -p 5001:5001 -d localhost/pharmacy:v5 inventory_service.py
+$ podman run --rm --name customer_service --network pharmacy -p 5003:5003  -d localhost/pharmacy:v5 customer_service.py
+$ podman run --rm --name billing_service --network pharmacy -p 5004:5004  -d localhost/pharmacy:v5 billing_service.py
+$ podman run --rm --name order_service --network pharmacy -v data:/data:rw -p 5002:5002  -d localhost/pharmacy:v5 order_service.py
 ----
 
-We can see the container is in exited status
+Test the service:
 
 [source,shell]
 ----
-$ podman ps -a | grep order_service
-4ced8fd4668b  localhost/pharmacy:v3               order_service.py      17 seconds ago  Exited (1) 18 seconds ago                order_service
+$ ansible-playbook play.yml
 ----
 
-Let’s find out why.
-
-[source,shell]
-----
-$ podman logs order_service
-Traceback (most recent call last):
-  File "//order_service.py", line 12, in <module>
-    with open(ORDERS_FILE, 'w') as f:
-         ^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/data/orders.json'
-----
-
-Ah! The problem is that when we execute the Python script, it is unable to find the (/data/orders.json) file, which is supposed to be created automatically, but not the (/data) directory, we need to add the (/data) directory to our image by modifying our Containerfile
-
-.Containerfile
-[source,dockerfile]
-----
-FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
-RUN mkdir /data
-COPY *.py .
-ENTRYPOINT ["python3"]
-----
-
-Once again, build the image. This time version 4:
-
-[source,shell]
-----
-$ podman build -t pharmacy:v4 .
-----
-
-Ensure you don't have another container already in the system with the same name:
-
-[source,shell]
-----
-$ podman rm order_service
-----
-
-And run the container for the order_service using version four:
-
-[source,shell]
-----
-$ podman run --rm --name order_service --network host -d localhost/pharmacy:v4 order_service.py
-----
-
-Let’s test a service to be sure it's working
-
-// TODO add instructions to test the service
-
-Add one order and then check the file to see if it is saved
-
-[source,shell]
-----
-$ curl -X POST \
-    -H "Content-Type: application/json" \
-    -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
-
-{"message":"Order placed successfully","order_details":{"customer_id":"customer_id_1","medicine":"medicine_A","quantity":5,"status":"Pending"}}
-----
-
-We can print our active orders:
-
-[source,shell]
-----
-$ curl http://127.0.0.1:5002/view_orders
-{"orders":[{"customer_id":"customer_id_1","medicine":"medicine_A","quantity":5,"status":"Pending"}]}
-----
-
-And we check the file:
-
-[source,shell]
-----
-$ podman exec -ti order_service cat /data/orders.json
-[
-  {
-    "customer_id": "customer_id_1",
-    "medicine": "medicine_A",
-    "quantity": 5,
-    "status": "Pending"
-  }
-]
-----
-
-We are storing the orders in the database, but if we stop the container for whatever reason, we will lose all the information, we need to convert the (/data) folder into a volume to make it permanent
-
-[source,shell]
-----
-$ podman volume create data
-$ podman volume inspect data | grep Mountpoint
-          "Mountpoint": "/home/username/.local/share/containers/storage/volumes/data/_data",
-----
-
-Now we can rerun our container, but using our volume:
-
-[source,shell]
-----
-$ podman stop order_service
-$ podman run --rm --name order_service --network host -v data:/data:rw -d localhost/pharmacy:v4 order_service.py
-# OR
-$ podman run --rm --name order_service --network host --mount type=volume,src=data,dst=/data,rw=true -d localhost/pharmacy:v4 order_service.py
-----
-
-Add one new order
-
-[source,shell]
-----
-$ curl -X POST \
-    -H "Content-Type: application/json" \
-    -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
-
-{"message":"Order placed successfully","order_details":{"customer_id":"customer_id_1","medicine":"medicine_A","quantity":5,"status":"Pending"}}
-----
-
-Check our database file. Instead of doing it through the file in the container, do it through the local file on the host.
-
-[source,shell]
-----
-$ cat /home/username/.local/share/containers/storage/volumes/data/_data/orders.json
-[
-  {
-    "customer_id": "customer_id_1",
-    "medicine": "medicine_A",
-    "quantity": 5,
-    "status": "Pending"
-  }
-]
-----
-
-Excellent! If our container is stopped, we can simply restart it, and the data will persist.
+We have a fully isolated application running on its own network with persistent storage and a fully functional application.

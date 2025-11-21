@@ -18,4 +18,4 @@ def view_customer(customer_id):
     return json.dumps({'customer_details': customers[customer_id]}, indent=4)
 
 if __name__ == '__main__':
-    app.run(port=5003)
+    app.run(host='0.0.0.0', port=5003)
