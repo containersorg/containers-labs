@@ -1,8 +1,14 @@
-= containers-labs
+= containers-labs: From Monolith to Kubernetes
 
 This repository contains the example project designed as laboratory exercises for the 'Containers and Microservices' course at Collin College.
 
-The structure of the repository divided by multiple branches, each branch corresponds to a specific lab exercise.
+The repository is structured to take you through a comprehensive, step-by-step journey: from modeling traditional monolithic applications to deploying a modern, resilient, multi-service application stack on a Kubernetes cluster.
+
+image::images/podman.png[align="center"]
+
+== 1. Lab Index (The Containerization Journey)
+
+The entire course progression is managed through separate Git branches. To begin a lab, check out the corresponding branch (e.g., `git checkout lab-01`).
 
 [%header,cols="^1,3",align="center",stripes="even",width="75%"]
 |===
@@ -24,6 +30,19 @@ The structure of the repository divided by multiple branches, each branch corres
 | lab-13        | Running Applications in Kubernetes
 |===
 
-image::images/podman.png[align="center"]
+== 2. Final Conclusion: The Value of Containerization
+
+The series of labs demonstrates the fundamental shift required for modern application management, moving from brittle, tightly-coupled code to secure, scalable microservices.
+
+[]
+====
+**Key Operational & Security Lessons Learned**
+
+. **Immutability:** Images are single sources of truth. Changes are never applied to running containers; instead, a new, clean image version is built and deployed.
+. **Persistence vs. Immutability:** Data must be externalized from the container's volatile filesystem and placed into a dedicated **Volume** to survive crashes and restarts.
+. **Security:** Secrets are never stored in source code or environment variables.
+. **Isolation:** Moving from the insecure Host Network to a dedicated **Bridge Network** is crucial for preventing container conflicts.
+. **Orchestration:** Tools like **Compose** and **Kubernetes** are necessary to manage the lifecycle, networking, and scaling of multiple interconnected services automatically.
+====
 
 == Prof. Juan Medina - Collin College
