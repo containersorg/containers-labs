@@ -1,71 +1,100 @@
 = Lab 10 - Troubleshooting the Application
+:tip-caption: 💡 TIP
+:warning-caption: ⚠️ WARNING
 
-Let’s review the logs of the application using the LNAV LogFile Navigator, which we will start by installing:
+In a containerized environment, effective troubleshooting relies on system tools, performance monitoring, and self-healing configurations.
+
+== 1. Debugging and Logging
+
+Linux containers stream their application logs (STDOUT/STDERR) directly to the host's logging system (`journald`). We can use specialized tools to view this stream.
+
+Start by installing the powerful **LNAV (LogFile Navigator)** tool, which automatically aggregates and displays logs in a readable format.
 
 [source,shell]
 ----
 $ sudo dnf install -y lnav
 ----
 
-Use it against any of the running containers as follows:
+=== View Container Logs
+
+Use `journalctl` to filter logs for a specific container and pipe the output to `lnav`. This allows you to quickly view and search the application output, including errors and access logs.
 
 [source,shell]
 ----
 $ sudo journalctl CONTAINER_NAME=order_service | lnav
 ----
 
-Monitor the performance of the application containers. The running processes can be seen with the following command:
+NOTE: The `CONTAINER_NAME` filter relies on the journald logging driver automatically setting this metadata during container execution.
+
+== 2. Monitoring Performance
+
+We use built-in Podman commands to monitor the health and performance statistics of our running microservices.
+
+=== Check Running Processes
+
+The `podman top` command shows the processes running *inside* a specific container, similar to running `ps aux` in Linux.
 
 [source,shell]
 ----
 $ podman top order_service
 ----
 
-Performance statistics can be found using the following command:
+=== Monitor Live Statistics
+
+The `podman stats` command provides an aggregate, live view of CPU, memory, and I/O usage for all running containers.
 
 [source,shell]
 ----
 $ podman stats
 ----
 
-However, when using containers, we should always strive for self-healing processes. If you remember, in our previous modules, we continued to verify the availability of the application by testing it, like:
+== 3. Enabling Self-Healing (Health Checks)
+
+To ensure orchestration systems (like Kubernetes, or simply a restart script) know when a service is truly available, we define a **Health Check**. This is a simple command run periodically by the container runtime.
+
+=== Define the Health Check
+
+We will add a health check to the `inventory_service` container. The health check command uses `curl` to hit the `/view_inventory` endpoint, which must return an HTTP 200 status. If it fails, the process exits (status 1), marking the container as *unhealthy*.
+
+WARNING: Ensure the services from Lab 9 are stopped, and run this new command to launch the Inventory Service.
 
 [source,shell]
 ----
-$ ansible-playbook play.yml
-----
-
-What if we can add the health check at runtime?
-
-[source,shell]
-----
+$ podman stop -a
 $ podman run --rm --name inventory_service --network pharmacy -p 5001:5001 \
     --health-cmd='curl http://0.0.0.0:5001/view_inventory || exit 1' \
     --health-interval=30s -d localhost/pharmacy:v5 inventory_service.py
 ----
 
-Now we can run the health check at any time, and if there is no answer, it means we are OK!
+=== Inspect Health Status
 
-After running the container with a health check, inspect its status with podman ps:
+After running the container, inspect its status with `podman ps` to see the results of the periodic health check.
 
 [source,shell]
 ----
 $ podman ps
-CONTAINER ID  IMAGE                  COMMAND              CREATED   STATUS            NAMES
-c8d...        localhost/pharmacy:v5  inventory_service.py 15s ago   Up 14s (healthy)  inventory_service
+CONTAINER ID  IMAGE           COMMAND       CREATED   STATUS             NAMES
+c8d...        localhost/pharmacy:v5 inventory_service.py 15s ago  Up 14s (healthy)   inventory_service
 ----
 
-Notice the status column includes the health of the container, such as (healthy). This gives you an immediate, at-a-glance view of your application's state.
+Notice the status column now includes **`(healthy)`**.
+
+You can also manually trigger a check and retrieve the status programmatically:
 
 [source,shell]
 ----
 $ podman healthcheck run inventory_service
+# Output confirms the check was executed.
+
+$ podman inspect --format='{{json .State.Health.Status}}' inventory_service
+"healthy"
 ----
 
-Even if we don’t run it manually, the health check is continuously being executed
+This feature gives you an immediate, reliable, at-a-glance view of your application's operational state, moving you toward truly self-healing, automated deployments. 
+
+== 4. Terminating the Lab
 
 [source,shell]
 ----
-$ podman inspect --format='{{json .State.Health.Status}}' inventory_service
-"healthy"
+$ podman stop -a
 ----
