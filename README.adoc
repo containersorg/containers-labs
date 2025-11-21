@@ -16,15 +16,14 @@ Open a terminal and execute the following commands to create the four service co
 
 [source,shell]
 ----
-$ podman run --rm --name inventory_service --network host -dti fedora /bin/bash
-$ podman run --rm --name order_service --network host -dti fedora /bin/bash
-$ podman run --rm --name customer_service --network host -dti fedora /bin/bash
-$ podman run --rm --name billing_service --network host -dti fedora /bin/bash
+$ podman run --name inventory_service --network host -dti fedora /bin/bash
+$ podman run --name order_service --network host -dti fedora /bin/bash
+$ podman run --name customer_service --network host -dti fedora /bin/bash
+$ podman run --name billing_service --network host -dti fedora /bin/bash
 ----
 
 [NOTE]
 ====
-. We added the (`--rm`) option to ensure the containers are deleted from our system once they are stopped.
 . The (`-dti`) flags create the container *detached* (`-d`), with a *terminal* (`-t`), and in *interactive* mode (`-i`) so we can connect to them later.
 . We passed the command (`/bin/bash`), which keeps the container alive and ready for interactive commands.
 ====
@@ -161,8 +160,6 @@ The successful execution confirms that the manually configured containers are ru
 image::images/containerized.png[600,600,align=center]
 
 == 5. Terminating the Lab
-
-WARNING: Since we used the `--rm` flag when running the containers, simply stopping them will delete them permanently.
 
 [source,shell]
 ----
