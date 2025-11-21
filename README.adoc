@@ -1,52 +1,44 @@
-= Lab 8 - Making Data Persistent
+= Lab 8 - Making Data Persistent (Volumes)
+:tip-caption: 💡 TIP
+:warning-caption: ⚠️ WARNING
 
-The engineering team has come back to you with a new requirement for the pharmacy application. They want to ensure that the orders placed by customers are stored persistently, so that even if the order service is restarted or crashes, the order data is not lost.
+The engineering team has a new requirement: ensure that customer order data is stored persistently, so that even if the Order Service is restarted or crashes, the data is not lost.
 
-To achieve this, they have modified the `order_service.py` to store orders in a file-based database (JSON file) instead of keeping them in memory. This way, the orders will persist even if the service is restarted.
+To achieve this, the `order_service.py` has been modified to store orders in a file-based database (JSON file) located at the path defined by the constant `ORDERS_FILE` which is set to **/data/orders.json**.
 
-In this version:
+This persistence mechanism relies on three steps: read existing orders from the file, update orders, and write changes back to the file.
 
-- The ORDERS_FILE constant is defined to specify the filename for storing orders, and we are using (/data/orders.json) as our default database.
-- Two functions (read_orders and write_orders) are introduced to read and write orders to the file.
-- Before processing orders, the application reads existing orders from the file and updates them accordingly.
+== 1. Debugging the Missing Directory
 
-This way, your orders are persisted across server restarts, making the application more resilient to restarts and downtime.
+Since we have new code, we need to rebuild the images and create new containers.
 
-Since we have a new version of code, we need to rebuild the images and create new containers:
+=== Build and Run Initial V3
 
-First, we build the image:
+First, we build the initial V3 image. We will run it without the `--rm` option so the failed container remains in the system for inspection.
 
 [source,shell]
 ----
 $ podman build -t pharmacy:v3 .
-----
-
-Now we run the containers, but since only the `order_service` was modified, let’s stop just that one and run it again using the new version:
-
-[source,shell]
-----
-$ podman stop order_service
-$ podman run --rm --name order_service --network host -d localhost/pharmacy:v3 order_service.py
-----
-
-Wait! Something is wrong! Let’s investigate:
-
-1. Run the containers without the (--rm) option to avoid losing the traces of the execution.
-
-[source,shell]
-----
+# Ensure no other containers are running
+$ podman stop -a
 $ podman run --name order_service --network host -d localhost/pharmacy:v3 order_service.py
+$ podman run --name inventory_service --network host -d localhost/pharmacy:v3 inventory_service.py
+$ podman run --name customer_service --network host -d localhost/pharmacy:v3 customer_service.py
+$ podman run --name billing_service --network host -d localhost/pharmacy:v3 billing_service.py
 ----
 
-We can see the container is in exited status
+We check the container status:
 
 [source,shell]
 ----
-$ podman ps -a | grep order_service
-4ced8fd4668b  localhost/pharmacy:v3               order_service.py      17 seconds ago  Exited (1) 18 seconds ago                order_service
+$ podman ps -a
 ----
 
-Let’s find out why.
+Notice that the `order_service` container is not running as expected. The container is in an **Exited (1)** status, indicating an application failure.
+
+== Inspect Logs for Cause
+
+Let's find out why the application crashed by checking the container logs:
 
 [source,shell]
 ----
@@ -54,127 +46,130 @@ $ podman logs order_service
 Traceback (most recent call last):
   File "//order_service.py", line 12, in <module>
     with open(ORDERS_FILE, 'w') as f:
-         ^^^^^^^^^^^^^^^^^^^^^^
+    ^^^^^^^^^^^^^^^^^^^^^^
 FileNotFoundError: [Errno 2] No such file or directory: '/data/orders.json'
 ----
 
-Ah! The problem is that when we execute the Python script, it is unable to find the (/data/orders.json) file, which is supposed to be created automatically, but not the (/data) directory, we need to add the (/data) directory to our image by modifying our Containerfile
+TIP: The error shows the application failed because it tried to open the file `/data/orders.json`, but the **`/data` directory itself does not exist** in the image's filesystem, causing a `FileNotFoundError`.
 
-.Containerfile
+== 2. Fixing the Image with the `/data` Directory
+
+We must add the `/data` directory to our image by modifying the `Containerfile` and rebuilding.
+
+.Containerfile (V4 - Directory Fix)
 [source,dockerfile]
 ----
-FROM fedora
-RUN dnf install -yqq python3 pip
-RUN pip install Flask
-RUN mkdir /data
-COPY *.py .
-ENTRYPOINT ["python3"]
+include::solution/Containerfile[]
 ----
 
-Once again, build the image. This time version 4:
+=== Rebuild and Relaunch V4
+
+Once again, build the image (version 4).
 
 [source,shell]
 ----
 $ podman build -t pharmacy:v4 .
-----
+$ podman rm order_service # Remove the old, failed container
+$ podman run --name order_service --network host -d localhost/pharmacy:v4 order_service.py
+---
 
-Ensure you don't have another container already in the system with the same name:
+== Test the Application Write Function
 
-[source,shell]
-----
-$ podman rm order_service
-----
-
-And run the container for the order_service using version four:
+The service should now be running. Let's test the service by placing an order.
 
 [source,shell]
 ----
-$ podman run --rm --name order_service --network host -d localhost/pharmacy:v4 order_service.py
-----
+  # 1. Place a new order
 
-Let’s test a service to be sure it's working
-
-// TODO add instructions to test the service
-
-Add one order and then check the file to see if it is saved
-
-[source,shell]
-----
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
     http://localhost:5002/place_order
 
-{"message":"Order placed successfully","order_details":{"customer_id":"customer_id_1","medicine":"medicine_A","quantity":5,"status":"Pending"}}
-----
+  # 2. Verify the order was successfully added and read back
 
-We can print our active orders:
-
-[source,shell]
-----
 $ curl http://127.0.0.1:5002/view_orders
-{"orders":[{"customer_id":"customer_id_1","medicine":"medicine_A","quantity":5,"status":"Pending"}]}
-----
 
-And we check the file:
+  # 3. Check the file inside the container's filesystem
 
-[source,shell]
-----
 $ podman exec -ti order_service cat /data/orders.json
 [
   {
     "customer_id": "customer_id_1",
-    "medicine": "medicine_A",
-    "quantity": 5,
-    "status": "Pending"
+    # ... order data saved to the file inside the container ...
   }
 ]
 ----
 
-We are storing the orders in the database, but if we stop the container for whatever reason, we will lose all the information, we need to convert the (/data) folder into a volume to make it permanent
+The order data is now saved to the file within the container's writable layer.
+
+== 3. Enabling External Persistence with Volumes
+
+The data is currently saved on the container's writable layer. If we stop and remove the container (using `--rm`), we lose the data. To achieve true persistence across container restarts, we must convert the `/data` folder into a **Volume**.
+
+=== Create the Volume
+
+Create a named volume on the host system. This is a dedicated, host-managed storage area.
 
 [source,shell]
 ----
-$ podman volume create data
-$ podman volume inspect data | grep Mountpoint
-          "Mountpoint": "/home/username/.local/share/containers/storage/volumes/data/_data",
+$ podman volume create pharmacy_orders_data
+$ podman volume inspect pharmacy_orders_data | grep Mountpoint
+          "Mountpoint": "/home/username/.local/share/containers/storage/volumes/pharmacy_orders_data/_data",
 ----
 
-Now we can rerun our container, but using our volume:
+NOTE: The `Mountpoint` is the actual directory on your host machine where the data will be stored permanently.
+
+=== Rerun the Container with Volume Mount
+
+Stop the current container and relaunch it using the volume. We use the `-v` flag to map the host volume to the container's internal `/data` directory.
 
 [source,shell]
 ----
 $ podman stop order_service
-$ podman run --rm --name order_service --network host -v data:/data:rw -d localhost/pharmacy:v4 order_service.py
-# OR
-$ podman run --rm --name order_service --network host --mount type=volume,src=data,dst=/data,rw=true -d localhost/pharmacy:v4 order_service.py
+$ podman rm order_service
+$ podman run --rm --name order_service --network host \
+    -v pharmacy_orders_data:/data:rw \
+    -d localhost/pharmacy:v4 order_service.py
 ----
 
-Add one new order
+=== Final Persistence Test
+
+Place one new order and then stop the container to prove the data persists externally.
 
 [source,shell]
 ----
+  # Place a new order (this data is written to the host volume)
+
 $ curl -X POST \
     -H "Content-Type: application/json" \
-    -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
+    -d '{"customer_id": "customer_id_2", "medicine": "medicine_B", "quantity": 10}' \
     http://localhost:5002/place_order
 
-{"message":"Order placed successfully","order_details":{"customer_id":"customer_id_1","medicine":"medicine_A","quantity":5,"status":"Pending"}}
-----
+  # Retrieve the host mountpoint path (replace 'username' with your actual username)
 
-Check our database file. Instead of doing it through the file in the container, do it through the local file on the host.
+$ HOST_VOLUME_PATH=$(podman volume inspect pharmacy_orders_data --format '{{ .Mountpoint }}')
 
-[source,shell]
-----
-$ cat /home/username/.local/share/containers/storage/volumes/data/_data/orders.json
+  # Check the file contents directly from the host system
+
+$ cat $HOST_VOLUME_PATH/orders.json
 [
   {
     "customer_id": "customer_id_1",
-    "medicine": "medicine_A",
-    "quantity": 5,
-    "status": "Pending"
+    # ... first order data ...
+  },
+  {
+    "customer_id": "customer_id_2",
+    # ... second order data ...
   }
 ]
 ----
 
-Excellent! If our container is stopped, we can simply restart it, and the data will persist.
+Excellent! The data is now fully persistent. If the container is stopped or deleted, we can simply restart it using the same volume, and the data will be retained.
+
+== 4. Terminating the Lab
+
+[source,shell]
+----
+$ podman stop -a
+----
