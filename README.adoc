@@ -4,7 +4,7 @@ tip-caption: 💡 TIP
 
 Our microservices are currently running inside containers from Lab 3. However, if we stop one of them, we lose all the manual changes we made (installing Python, Flask, copying code) because those changes only exist on the container's **writable layer**.
 
-=== Restarting Containers (if needed)
+== Restarting Containers (if needed)
 
 Run the following commands to restart the containers if they were removed after stopping in the previous lab.
 
