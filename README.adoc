@@ -14,12 +14,12 @@ Test the local script to confirm the expected behavior:
 
 [source,shell]
 ----
-$ python3 authentication.py
+$ python3 auth.py
 Enter your username: fakename
 Enter your password: fakepassword
 Error: Invalid username or password. Authentication failed.
 
-$ python3 authentication.py
+$ python3 auth.py
 Enter your username: user123
 Enter your password: password123
 Welcome, user123! Authentication successful.
