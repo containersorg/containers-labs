@@ -16,13 +16,11 @@ We will now commit a new image, `pharmacy:manual`, that contains *all* applicati
 
 === Verify Current Code State
 
-Select the running `inventory_service` container from Lab 4 and inspect its file list.
+Select the running `inventory_service` container from Lab 4 and inspect its file list. (If it's not running, start it again with the same command as in Lab 4.)
 
 [source,shell]
 ----
-$ podman exec -ti inventory_service ls -l *.py
-ls: cannot access 'billing_service.py': No such file or directory
-# ... (and other files are missing)
+$ podman exec -ti inventory_service ls -l | grep .py
 -rw-r--r--. 1 root root 363 Jan 13 20:04 inventory_service.py
 ----
 
@@ -35,6 +33,17 @@ We are missing the other three service files. Copy all of them into the running 
 $ podman cp billing_service.py inventory_service:/
 $ podman cp customer_service.py inventory_service:/
 $ podman cp order_service.py inventory_service:/
+----
+
+Verify the files are now present:
+
+[source,shell]
+----
+$ podman exec -ti inventory_service ls -l | grep .py
+-rw-r--r--. 1 root root 363 Jan 13 20:04 billing_service.py
+-rw-r--r--. 1 root root 363 Jan 13 20:04 customer_service.py
+-rw-r--r--. 1 root root 363 Jan 13 20:04 inventory_service.py
+-rw-r--r--. 1 root root 363 Jan 13 20:04 order_service.py
 ----
 
 === Commit the Unified Image
@@ -86,6 +95,18 @@ $ podman run --rm --name billing_service --network host -d localhost/pharmacy:ma
 ----
 
 Notice that now, with a **single image**, we are running all four services, which is much more efficient and easier to manage in a registry.
+
+Verify all containers are running:
+
+[source,shell]
+----
+$ podman ps
+CONTAINER ID  IMAGE                      COMMAND               CREATED         STATUS         PORTS       NAMES
+cd62d8ad0429  localhost/pharmacy:manual  python3 inventory...  36 seconds ago  Up 36 seconds              inventory_service
+e9621db33efa  localhost/pharmacy:manual  python3 order_ser...  31 seconds ago  Up 31 seconds              order_service
+dee656a4e663  localhost/pharmacy:manual  python3 customer_...  27 seconds ago  Up 28 seconds              customer_service
+b5bc1352919e  localhost/pharmacy:manual  python3 billing_s...  23 seconds ago  Up 23 seconds              billing_service
+----
 
 === Final Application Test
 
