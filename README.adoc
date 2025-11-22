@@ -28,18 +28,22 @@ By default, Flask binds to `127.0.0.1` (localhost), meaning it only accepts conn
 
 Binding to **`0.0.0.0` (All Interfaces)** tells the application to accept connections on the virtual network interface assigned by Podman. When we use port mapping (`-p 5001:5001`), Podman forwards traffic from the host into the container, and the application must be listening on `0.0.0.0` to accept it.
 
-We need to modify the `app.run()` call in **all four** Python scripts:
+The engineering team already modified the code of the application to accomplish this. You can verify the changes by searching for `app.run` in the source files:
 
 [source,python]
 ----
-# On billing_service.py
-    app.run(host='0.0.0.0',port=5004)
-# On customer_service.py
-    app.run(host='0.0.0.0',port=5003)
-# On order_service.py
-    app.run(host='0.0.0.0',port=5002)
-# On inventory_service.py
-    app.run(host='0.0.0.0',port=5001)
+$ grep app.run *.py
+billing_service.py:    app.run(host='0.0.0.0', port=5004)
+customer_service.py:    app.run(host='0.0.0.0', port=5003)
+inventory_service.py:    app.run(host='0.0.0.0', port=5001)
+order_service.py:    app.run(host='0.0.0.0', port=5002)
+----
+
+Also the URL endpoint for inter-service communication has been updated to use the container names instead of localhost IP address. For example, in `order_service.py`:
+
+[source,python]
+----
+INVENTORY_API_URL = "http://inventory_service:5001"
 ----
 
 === Rebuild the Final Image
@@ -59,11 +63,23 @@ We now deploy the containers using two critical flags:
 
 [source,shell]
 ----
-$ podman stop -a
-$ podman run --rm --name inventory_service --network pharmacy -p 5001:5001 -d localhost/pharmacy:v5 inventory_service.py
-$ podman run --rm --name customer_service --network pharmacy -p 5003:5003  -d localhost/pharmacy:v5 customer_service.py
-$ podman run --rm --name billing_service --network pharmacy -p 5004:5004  -d localhost/pharmacy:v5 billing_service.py
-$ podman run --rm --name order_service --network pharmacy -v pharmacy_orders_data:/data:rw -p 5002:5002  -d localhost/pharmacy:v5 order_service.py
+$ podman rm -f inventory_service customer_service billing_service order_service
+$ podman run --name inventory_service --network pharmacy -p 5001:5001 -d localhost/pharmacy:v5 inventory_service.py
+$ podman run --name customer_service --network pharmacy -p 5003:5003  -d localhost/pharmacy:v5 customer_service.py
+$ podman run --name billing_service --network pharmacy -p 5004:5004  -d localhost/pharmacy:v5 billing_service.py
+$ podman run --name order_service --network pharmacy -v pharmacy_orders_data:/data:rw -p 5002:5002  -d localhost/pharmacy:v5 order_service.py
+----
+
+Verify that all containers are running:
+
+[source,shell]
+----
+$ podman ps
+CONTAINER ID  IMAGE                  COMMAND               CREATED         STATUS         PORTS                   NAMES
+289d4fbde040  localhost/pharmacy:v5  inventory_service...  18 seconds ago  Up 19 seconds  0.0.0.0:5001->5001/tcp  inventory_service
+b8b50468520c  localhost/pharmacy:v5  customer_service....  12 seconds ago  Up 13 seconds  0.0.0.0:5003->5003/tcp  customer_service
+57f45bef49ce  localhost/pharmacy:v5  billing_service.p...  8 seconds ago   Up 9 seconds   0.0.0.0:5004->5004/tcp  billing_service
+10271ca733b2  localhost/pharmacy:v5  order_service.py      3 seconds ago   Up 4 seconds   0.0.0.0:5002->5002/tcp  order_service
 ----
 
 == 4. Testing the Isolated Application
@@ -91,13 +107,15 @@ Place an order. This requires the Order Service (running on its *internal* netwo
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
+    http://127.0.0.1:5002/place_order
 
 # Verify the order exists
 $ curl http://127.0.0.1:5002/view_orders
 ----
 
 We have achieved a fully isolated and persistent application that runs on its own secure network, using port mapping to expose only the necessary services to the host.
+
+image::images/micro-soa.jpeg[]
 
 == 5. Terminating the Lab
 
