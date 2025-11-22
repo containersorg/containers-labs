@@ -25,9 +25,16 @@ CMD ["python3", "inventory_service.py"]
 
 > ... other Containerfiles follow the same structure and pattern ...
 
+You can observe them all with the following command:
+
+[source,shell]
+----
+$ tail Containerfile_*
+----
+
 == 1. Building the Images Automatically
 
-To build these images, navigate to the directory containing each service's source code and run the following commands.
+To build these images, navigate to the microservices directory and run the following commands.
 
 [source,shell]
 ----
@@ -43,10 +50,11 @@ TIP: Did you notice how fast the building process was after the first image? Sin
 
 [source,shell]
 ----
-$ podman images
-REPOSITORY                          TAG         IMAGE ID      CREATED             SIZE
-localhost/billing-service           latest      d5f2a420aba5  19 seconds ago      480 MB
-# ... list of all four new images ...
+$ podman image ls | grep '-service'
+localhost/billing-service                     latest      2c6c35332f5d  26 seconds ago  349 MB
+localhost/customer-service                    latest      bc7b8e8194ae  31 seconds ago  349 MB
+localhost/order-service                       latest      b59b952e73d2  36 seconds ago  349 MB
+localhost/inventory-service                   latest      981e3a973de3  44 seconds ago  349 MB
 ----
 
 == 2. Deploying Services from Containerfiles
@@ -68,10 +76,17 @@ Run all four containers using the images we just built. The `podman run` command
 
 [source,shell]
 ----
-$ podman run --rm --name inventory_service --network host -d localhost/inventory-service
-$ podman run --rm --name order_service --network host -d localhost/order-service
-$ podman run --rm --name customer_service --network host -d localhost/customer-service
-$ podman run --rm --name billing_service --network host -d localhost/billing-service
+$ podman run --name inventory_service --network host -d localhost/inventory-service
+$ podman run --name order_service --network host -d localhost/order-service
+$ podman run --name customer_service --network host -d localhost/customer-service
+$ podman run --name billing_service --network host -d localhost/billing-service
+----
+
+Verify that all four services are running:
+
+[source,shell]
+----
+$ podman ps
 ----
 
 == 3. Testing the Automated Deployment
