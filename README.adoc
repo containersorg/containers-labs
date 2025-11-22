@@ -61,29 +61,43 @@ $ podman exec -ti customer_service dnf install -y python3 pip
 $ podman exec -ti billing_service dnf install -y python3 pip
 ----
 
-Update pip on every container:
+Update pip on every container but this time let's use a loop to avoid repetition:
 
 [source,shell]
 ----
-$ podman exec -ti inventory_service pip install --upgrade pip
-$ podman exec -ti order_service pip install --upgrade pip
-$ podman exec -ti customer_service pip install --upgrade pip
-$ podman exec -ti billing_service pip install --upgrade pip
+for service in inventory_service order_service customer_service billing_service
+do
+  podman exec -ti $service pip install --upgrade pip
+done
 ----
 
-Now, install `Flask` and `requests` libraries on every container:
+Now, install `Flask` and `requests` libraries on every container, but this time let's use a list in file to avoid repetition. Create a file named `pharmacy.svc` with the following content:
+
+[source,ini]
+----
+inventory_service
+order_service
+customer_service
+billing_service
+----
+
+Then run the following command to read the file line by line and install the required libraries in each container:
 
 [source,shell]
 ----
-$ podman exec -ti inventory_service pip install Flask requests
-$ podman exec -ti order_service pip install Flask requests
-$ podman exec -ti customer_service pip install Flask requests
-$ podman exec -ti billing_service pip install Flask requests
+for service in $(cat pharmacy.svc)
+do
+  podman exec -ti $service pip install Flask requests
+done
 ----
+
+> All three different approaches (individual commands, loop, and file list) achieve the same result.
 
 === Copy Application Code
 
 We use **`podman cp`** to copy the service code from our local host directory into the container's root directory (`/`).
+
+NOTE: Be sure you are in the directory where the `*_service.py` files are located before executing these commands.
 
 [source,shell]
 ----
@@ -93,12 +107,15 @@ $ podman cp customer_service.py customer_service:/
 $ podman cp billing_service.py billing_service:/
 ----
 
-To verify that our files were successfully copied:
+To verify that our files were successfully copied let's use the list in the pharmacy.svc file again:
 
 [source,shell]
 ----
-$ podman exec -ti inventory_service ls -l *_service.py
-# ... and repeat for the other three containers ...
+for service in $(cat pharmacy.svc)
+do
+  echo "Verifying file in container $service:"
+  podman exec -ti $service ls -l ${service}.py
+done
 ----
 
 == 3. Executing Services in Containers
@@ -166,7 +183,7 @@ image::images/containerized.png[600,600,align=center]
 # Stop all running containers by name
 $ podman stop inventory_service order_service customer_service billing_service
 
-# Verify they are gone (podman ps should be empty)
+# All the containers should now be in 'Exited' status
 $ podman ps -a
 ----
 
