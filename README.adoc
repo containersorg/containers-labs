@@ -40,10 +40,11 @@ In this monolithic framework, all functionalities (orders, inventory, customer l
 
 NOTE: The Flask debugger will utilize the current terminal session, meaning you will need a second terminal to run the test commands.
 
-Run the application with the following command:
+Run the application with the following command from the `monolithic` directory:
 
 [source,shell]
 ----
+$ cd monolithic
 $ python3 pharmacy.py
  * Running on http://127.0.0.1:5000 (Press CTRL+C to quit)
 ----
