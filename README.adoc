@@ -44,10 +44,12 @@ NOTE: This is the least secure approach. Anyone viewing the source code knows th
 
 We improve security by modifying the application to read credentials from **environment variables**, removing them from the source code. The updated file is located in `solution/auth.py`.
 
-. Copy the updated code and rebuild the image:
+Backup the current auth.py code and then copy the updated code from the solution directory and proceed to rebuild the image:
+
 [source,shell]
 ----
-$ cp solution/auth.py authentication.py
+$ mv auth.py auth.py.bkp
+$ cp ../solution/auth.py auth.py
 $ podman build -t authenticator:v2 -f authContainerfile .
 ----
 
@@ -57,16 +59,25 @@ We are now passing the credentials in clear text when running the container.
 
 [source,shell]
 ----
-# WARNING: This exposes secrets via the 'podman inspect' command!
-$ podman run --rm -ti --name authenticator \
-    -e VALID_USERNAME=user123 -e VALID_PASSWORD=password123 \
-    localhost/authenticator:v2
+$ podman run -ti --name authenticator -e VALID_USERNAME=user123 -e VALID_PASSWORD=password123 localhost/authenticator:v2
 Enter your username: user123
 Enter your password: password123
 Welcome, user123! Authentication successful.
 ----
 
-WARNING: Although the secret is not in the source code, it is still visible to any user who can run `podman inspect` on the host machine. This is **unacceptable** for true secrets. 
+[WARNING]
+====
+Although the secret is not in the source code, it is still visible to any user who can run `podman inspect` on the host machine. This is **unacceptable** for true secrets.
+
+[source,shell]
+----
+$ podman inspect authenticator | grep VALID
+                    "VALID_USERNAME=user123",
+                    "VALID_PASSWORD=password123",
+                    "VALID_USERNAME=user123",
+                    "VALID_PASSWORD=password123",
+----
+====
 
 == 3. Utilizing Podman Secrets (Secure Production Method) 🏆
 
@@ -101,7 +112,8 @@ We run the container, instructing Podman to map the secure secret storage to the
 
 [source,shell]
 ----
-$ podman run --rm -ti --name authenticator \
+$ podman rm -f authenticator
+$ podman run -ti --name authenticator \
     --secret=username,type=env,target=VALID_USERNAME \
     --secret=password,type=env,target=VALID_PASSWORD \
     localhost/authenticator:v2
@@ -112,10 +124,19 @@ Welcome, user123! Authentication successful
 
 This final stage is the **most secure practice** for container deployment, ensuring sensitive data is protected using the platform's native secrets management features.
 
+We can verify that the secret values are not exposed, not even using inspect:
+
+[source,shell]
+----
+$ podman inspect authenticator | grep VALID
+                    "--secret=username,type=env,target=VALID_USERNAME",
+                    "--secret=password,type=env,target=VALID_PASSWORD",
+----
+
 == 4. Terminating the Lab
 
 [source,shell]
 ----
-$ podman rm authenticator
+$ podman rm -f authenticator
 $ podman secret rm username password
 ----
