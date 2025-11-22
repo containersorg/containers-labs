@@ -15,6 +15,13 @@ Start by installing the powerful **LNAV (LogFile Navigator)** tool, which automa
 $ sudo dnf install -y lnav
 ----
 
+Run the containers from Lab 9 if they are not already running.
+
+[source,shell]
+----
+$ podman start inventory_service order_service billing_service customer_service
+----
+
 === View Container Logs
 
 Use `journalctl` to filter logs for a specific container and pipe the output to `lnav`. This allows you to quickly view and search the application output, including errors and access logs.
@@ -25,6 +32,14 @@ $ sudo journalctl CONTAINER_NAME=order_service | lnav
 ----
 
 NOTE: The `CONTAINER_NAME` filter relies on the journald logging driver automatically setting this metadata during container execution.
+
+A few useful `lnav` commands:
+
+- Press `q` to quit `lnav`.
+- Press `/` to start a search.
+- Press `:` to see available commands.
+- Press `n` to go to the next search result.
+- Press `F` to follow the log output in real-time (like `tail -f`).
 
 == 2. Monitoring Performance
 
@@ -48,6 +63,8 @@ The `podman stats` command provides an aggregate, live view of CPU, memory, and 
 $ podman stats
 ----
 
+Use `CTRL+C` to exit the live view.
+
 == 3. Enabling Self-Healing (Health Checks)
 
 To ensure orchestration systems (like Kubernetes, or simply a restart script) know when a service is truly available, we define a **Health Check**. This is a simple command run periodically by the container runtime.
@@ -56,14 +73,12 @@ To ensure orchestration systems (like Kubernetes, or simply a restart script) kn
 
 We will add a health check to the `inventory_service` container. The health check command uses `curl` to hit the `/view_inventory` endpoint, which must return an HTTP 200 status. If it fails, the process exits (status 1), marking the container as *unhealthy*.
 
-WARNING: Ensure the services from Lab 9 are stopped, and run this new command to launch the Inventory Service.
-
 [source,shell]
 ----
-$ podman stop -a
-$ podman run --rm --name inventory_service --network pharmacy -p 5001:5001 \
+$ podman rm -f inventory_service
+$ podman run --name inventory_service --network pharmacy -p 5001:5001 \
     --health-cmd='curl http://0.0.0.0:5001/view_inventory || exit 1' \
-    --health-interval=30s -d localhost/pharmacy:v5 inventory_service.py
+    --health-interval=10s -d localhost/pharmacy:v5 inventory_service.py
 ----
 
 === Inspect Health Status
@@ -84,10 +99,32 @@ You can also manually trigger a check and retrieve the status programmatically:
 [source,shell]
 ----
 $ podman healthcheck run inventory_service
-# Output confirms the check was executed.
+# No Output confirms the check was executed.
 
 $ podman inspect --format='{{json .State.Health.Status}}' inventory_service
 "healthy"
+----
+
+Let's explore a few other health options while simulating a failure by using the wrong port in the health check command. This will cause the health check to fail, marking the container as *unhealthy*.
+
+[source,shell]
+----
+$ podman rm -f inventory_service
+$ podman run --name inventory_service --network pharmacy -p 5001:5001 \
+    --health-cmd='curl http://0.0.0.0:5555/view_inventory || exit 1' \
+    --health-interval=10s \
+    --health-retries=1 \
+    --health-start-period=5s \
+    --health-timeout=2s \
+    --health-on-failure=restart \
+     -d localhost/pharmacy:v5 inventory_service.py
+----
+
+Watch the progression of the health status every 3 seconds using the `watch` command:
+
+[source,shell]
+----
+$ watch -wctn 3 "podman inspect inventory_service | grep -w Health -A1"
 ----
 
 This feature gives you an immediate, reliable, at-a-glance view of your application's operational state, moving you toward truly self-healing, automated deployments. 
