@@ -59,10 +59,20 @@ TIP: The error shows the application failed because it tried to open the file `/
 
 We must add the `/data` directory to our image by modifying the `Containerfile` and rebuilding.
 
+The updated `Containerfile` with the fix for version 4 can be found in the solution folder.
+
 .Containerfile (V4 - Directory Fix)
 [source,dockerfile]
 ----
 include::solution/Containerfile[]
+----
+
+Modify your local `Containerfile` to match the above or copy it from the solution folder.
+
+[source,shell]
+----
+# Assuming you are in the microservices directory
+$ cp ../solution/Containerfile .
 ----
 
 === Rebuild and Relaunch V4
@@ -72,9 +82,20 @@ Once again, build the image (version 4).
 [source,shell]
 ----
 $ podman build -t pharmacy:v4 .
-$ podman rm order_service # Remove the old, failed container
+
+# Remove the old, failed container
+$ podman rm -f order_service
+
+# Relaunch the order_service container
 $ podman run --name order_service --network host -d localhost/pharmacy:v4 order_service.py
 ---
+
+Verify all four services are running:
+
+[source,shell]
+----
+$ podman ps
+----
 
 == Test the Application Write Function
 
@@ -106,9 +127,19 @@ $ podman exec -ti order_service cat /data/orders.json
 
 The order data is now saved to the file within the container's writable layer.
 
+What if something happens to the container? Let's stop --> remove --> restart --> check if the data is still there.
+
+[source,shell]
+----
+$ podman stop order_service
+$ podman rm order_service
+$ podman run --name order_service --network host -d localhost/pharmacy:v4 order_service.py
+$ podman exec -ti order_service cat /data/orders.json
+----
+
 == 3. Enabling External Persistence with Volumes
 
-The data is currently saved on the container's writable layer. If we stop and remove the container (using `--rm`), we lose the data. To achieve true persistence across container restarts, we must convert the `/data` folder into a **Volume**.
+The data is currently saved on the container's writable layer. If we stop and remove the container, we lose the data. To achieve true persistence across container restarts, we must convert the `/data` folder into a **Volume**.
 
 === Create the Volume
 
@@ -117,8 +148,13 @@ Create a named volume on the host system. This is a dedicated, host-managed stor
 [source,shell]
 ----
 $ podman volume create pharmacy_orders_data
+----
+
+Verify the volume was created and take note of its mountpoint:
+
+[source,shell]
+----
 $ podman volume inspect pharmacy_orders_data | grep Mountpoint
-          "Mountpoint": "/home/username/.local/share/containers/storage/volumes/pharmacy_orders_data/_data",
 ----
 
 NOTE: The `Mountpoint` is the actual directory on your host machine where the data will be stored permanently.
@@ -131,9 +167,9 @@ Stop the current container and relaunch it using the volume. We use the `-v` fla
 ----
 $ podman stop order_service
 $ podman rm order_service
-$ podman run --rm --name order_service --network host \
+$ podman run --rm -d --name order_service --network host \
     -v pharmacy_orders_data:/data:rw \
-    -d localhost/pharmacy:v4 order_service.py
+    localhost/pharmacy:v4 order_service.py
 ----
 
 === Final Persistence Test
@@ -149,13 +185,23 @@ $ curl -X POST \
     -d '{"customer_id": "customer_id_2", "medicine": "medicine_B", "quantity": 10}' \
     http://localhost:5002/place_order
 
-  # Retrieve the host mountpoint path (replace 'username' with your actual username)
+  # 2. Verify the order was successfully added and read back
 
-$ HOST_VOLUME_PATH=$(podman volume inspect pharmacy_orders_data --format '{{ .Mountpoint }}')
+$ curl http://127.0.0.1:5002/view_orders
 
-  # Check the file contents directly from the host system
+  # 3. Check the file inside the container's filesystem
 
-$ cat $HOST_VOLUME_PATH/orders.json
+$ podman exec -ti order_service cat /data/orders.json
+[
+  {
+    "customer_id": "customer_id_1",
+    # ... order data saved to the file inside the container ...
+  }
+]
+
+  # 4. Using the noted mountpoint path check the file contents directly from the host system. (Replace the username with your actual username)
+
+$ cat /home/username/.local/share/containers/storage/volumes/pharmacy_orders_data/_data/orders.json
 [
   {
     "customer_id": "customer_id_1",
