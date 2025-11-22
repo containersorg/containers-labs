@@ -27,10 +27,11 @@ WARNING: Ensure you have terminated the monolithic application from Lab 1 (`CTRL
 
 === Verify Service Ports
 
-Use `grep` to confirm that each file is configured to run on its designated port:
+Change to the microservices direction and use `grep` to confirm that each file is configured to run on its designated port:
 
 [source,shell]
 ----
+$ cd microservices
 $ grep app.run *.py
 inventory_service.py:     app.run(port=5001)
 order_service.py:         app.run(port=5002)
