@@ -34,12 +34,26 @@ $ podman build -t pharmacy:v2 .
 
 We now run four containers from the *same* `pharmacy:v2` image. The command passed at the end of the `podman run` instruction (the script name) becomes the argument to the `ENTRYPOINT`.
 
+Ensure all previous containers are stopped and removed before starting new ones.
+
 [source,shell]
 ----
-$ podman run --rm --name inventory_service --network host -d localhost/pharmacy:v2 inventory_service.py
-$ podman run --rm --name order_service --network host -d localhost/pharmacy:v2 order_service.py
-$ podman run --rm --name customer_service --network host -d localhost/pharmacy:v2 customer_service.py
-$ podman run --rm --name billing_service --network host -d localhost/pharmacy:v2 billing_service.py
+$ podman rm -f inventory_service order_service customer_service billing_service
+----
+
+[source,shell]
+----
+$ podman run --name inventory_service --network host -d localhost/pharmacy:v2 inventory_service.py
+$ podman run --name order_service --network host -d localhost/pharmacy:v2 order_service.py
+$ podman run --name customer_service --network host -d localhost/pharmacy:v2 customer_service.py
+$ podman run --name billing_service --network host -d localhost/pharmacy:v2 billing_service.py
+----
+
+Verify that all containers are running:
+
+[source,shell]
+----
+$ podman ps
 ----
 
 == 3. Final Validation
