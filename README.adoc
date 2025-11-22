@@ -4,17 +4,15 @@ tip-caption: 💡 TIP
 
 Our microservices are currently running inside containers from Lab 3. However, if we stop one of them, we lose all the manual changes we made (installing Python, Flask, copying code) because those changes only exist on the container's **writable layer**.
 
-== Restarting Containers (if needed)
-
-Run the following commands to restart the containers if they were removed after stopping in the previous lab.
+[NOTE]
+====
+Run the following commands to restart the containers if they were stopped after Lab 3.
 
 [source,shell]
 ----
-$ podman start inventory_service
-$ podman start order_service
-$ podman start customer_service
-$ podman start billing_service
+$ podman start inventory_service order_service customer_service billing_service
 ----
+====
 
 To retain their current state permanently and create a reusable artifact, we must **commit** the changes to a new image.
 
@@ -40,27 +38,30 @@ We now have four new images based on the Fedora base layer, but with all applica
 
 [source,shell]
 ----
-$ podman images
-REPOSITORY                          TAG         IMAGE ID      CREATED             SIZE
-localhost/billing_image             manual      5a57576464cc  About a minute ago  480 MB
-localhost/customer_image            manual      4984b299abcc  About a minute ago  479 MB
-localhost/order_image               manual      1686fcc661b5  About a minute ago  480 MB
-localhost/inventory_image           manual      c795e24d0157  About a minute ago  480 MB
-# ... and the original fedora image plus others ...
+$ podman image ls | grep 'manual'
+localhost/billing_image                       manual      e4d7b04b037e  49 seconds ago  367 MB
+localhost/customer_image                      manual      3c23cf252db4  2 minutes ago   367 MB
+localhost/order_image                         manual      0c92de394820  10 minutes ago  367 MB
+localhost/inventory_image                     manual      2b092be67e62  10 minutes ago  367 MB
 ----
 
 == 2. Running Services from the Custom Images
 
-Since the containers from Lab 3 used the `--rm` flag, they will be automatically deleted when stopped. We will now run new containers using our custom images.
-
 === Stop and Verify Cleanup
 
-Stop all currently running containers (if any are left from previous lab).
+Stop all currently running containers (if any are left from previous lab) and remove them from the active list.
 
 [source,shell]
 ----
+# Stop all running containers
 $ podman stop -a
 $ podman ps
+CONTAINER ID  IMAGE      COMMAND    CREATED    STATUS    PORTS      NAMES
+# Output should be empty
+
+# Remove all containers
+$ podman rm -a
+$ podman ps -a
 CONTAINER ID  IMAGE      COMMAND    CREATED    STATUS    PORTS      NAMES
 # Output should be empty
 ----
