@@ -19,8 +19,11 @@ First, we build the initial V3 image. We will run it without the `--rm` option s
 [source,shell]
 ----
 $ podman build -t pharmacy:v3 .
-# Ensure no other containers are running
-$ podman stop -a
+
+# Stop and Remove any existing containers
+$ podman rm -f inventory_service customer_service billing_service order_service
+
+# Run all four services using the new image
 $ podman run --name order_service --network host -d localhost/pharmacy:v3 order_service.py
 $ podman run --name inventory_service --network host -d localhost/pharmacy:v3 inventory_service.py
 $ podman run --name customer_service --network host -d localhost/pharmacy:v3 customer_service.py

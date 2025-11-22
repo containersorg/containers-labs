@@ -63,7 +63,7 @@ def place_order():
 @app.route('/view_orders', methods=['GET'])
 def view_orders():
     """Print existing orders"""
-	allorders = read_orders()
+    allorders = read_orders()
     return json.dumps({'orders': allorders}, indent=4)
 
 if __name__ == '__main__':
