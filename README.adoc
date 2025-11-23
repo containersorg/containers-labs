@@ -10,7 +10,7 @@ We will use K3s, a lightweight, easy-to-install Kubernetes distribution designed
 
 === Install K3s
 
-We install K3s as a system service.
+We install K3s as a system service. (Be patience, this process takes some minutes.)
 
 [source,shell]
 ----
@@ -21,6 +21,7 @@ The k3s server can be started and stopped with the following commands:
 
 [source,shell]
 ----
+$ sudo systemctl status k3s.service
 $ sudo systemctl start k3s.service
 $ sudo systemctl stop k3s.service
 ----
@@ -35,7 +36,19 @@ Use `kubectl` (aliased via `sudo` because of the installation path) to verify th
 ----
 $ sudo kubectl get nodes
 NAME              STATUS   ROLES                 AGE   VERSION
-fedora.home.lab   Ready    control-plane,master  26s   v1.28.5+k3s1
+fedora.home.lab   Ready    control-plane,master  26s   v1.33.5+k3s1
+----
+
+List all the default namespaces in the cluster before adding ours; these namespaces are used for the cluster configuration and we should not modify them.
+
+[source,shell]
+----
+$ sudo kubectl get namespaces
+NAME              STATUS   AGE
+default           Active   2m21s
+kube-node-lease   Active   2m21s
+kube-public       Active   2m21s
+kube-system       Active   2m21s
 ----
 
 === Create Namespace
@@ -44,11 +57,11 @@ Namespaces provide logical isolation within the Kubernetes cluster.
 
 [source,shell]
 ----
-$ sudo kubectl apply -f namespace.yaml
+$ sudo kubectl apply -f namespace.yml
 namespace/pharmacy created
 ----
 
-== 2. Defining the Application Deployment (YAML)
+== 2. Defining the Application Deployment
 
 We must define two things for our application: the **Deployment** (which manages the running pods and guarantees replicas) and the **Service** (which provides a stable network endpoint for the pods).
 

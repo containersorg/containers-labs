@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -20,3 +21,76 @@ spec:
             - containerPort: 5004
           command: ["python3"]
           args: ["billing_service.py"]
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-deployment
+  namespace: pharmacy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: customer-service
+  template:
+    metadata:
+      labels:
+        app: customer-service
+    spec:
+      containers:
+        - name: customer-service
+          image: localhost/pharmacy:latest
+          ports:
+            - containerPort: 5003
+          command: ["python3"]
+          args: ["customer_service.py"]
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-deployment
+  namespace: pharmacy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory-service
+  template:
+    metadata:
+      labels:
+        app: inventory-service
+    spec:
+      containers:
+        - name: inventory-service
+          image: localhost/pharmacy:latest
+          ports:
+            - containerPort: 5001
+          command: ["python3"]
+          args: ["inventory_service.py"]
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-deployment
+  namespace: pharmacy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: localhost/pharmacy:latest
+          ports:
+            - containerPort: 5002
+          command: ["python3"]
+          args: ["order_service.py"]
+...

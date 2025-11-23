@@ -1,4 +1,50 @@
-piVersion: v1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: billing-service-external
+  namespace: pharmacy
+spec:
+  selector:
+    app: billing-service
+  type: NodePort
+  ports:
+    - port: 5004
+      targetPort: 5004
+      nodePort: 30004
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-service-external
+  namespace: pharmacy
+spec:
+  selector:
+    app: customer-service
+  type: NodePort
+  ports:
+    - port: 5003
+      targetPort: 5003
+      nodePort: 30003
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-service-external
+  namespace: pharmacy
+spec:
+  selector:
+    app: inventory-service
+  type: NodePort
+  ports:
+    - port: 5001
+      targetPort: 5001
+      nodePort: 30001
+
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: order-service-external
@@ -11,3 +57,4 @@ spec:
     - port: 5002
       targetPort: 5002
       nodePort: 30002
+...
