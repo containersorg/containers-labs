@@ -153,9 +153,11 @@ Check the status:
 [source,shell]
 ----
 $ sudo kubectl get pods -n pharmacy
-NAME                 READY   STATUS    RESTARTS   AGE
-billing-...          1/1     Running   0          2m
-# ... (all pods should show Running)
+NAME                                    READY   STATUS    RESTARTS   AGE
+billing-deployment-55948d7c67-h2vp5     1/1     Running   0          12s
+customer-deployment-75d889bb6c-f2z9w    1/1     Running   0          12s
+inventory-deployment-649bbcfcf5-s8tmx   1/1     Running   0          12s
+order-deployment-7b9f9985db-4spc6       1/1     Running   0          12s
 ----
 
 === Expose and Test External Service Access
@@ -189,7 +191,7 @@ $ sudo kubectl delete -f nodeport.yml
 $ sudo kubectl delete ns pharmacy
 
 # Stop K3s cluster
-$ sudo systemctl stop k3s
+$ sudo systemctl stop k3s.service
 ----
 
 == Final Conclusion: The Journey to Containerization
