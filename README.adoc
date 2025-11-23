@@ -60,20 +60,33 @@ Namespaces provide logical isolation within the Kubernetes cluster.
 $ sudo kubectl apply -f namespace.yml
 ----
 
-== 2. Defining the Application Deployment
+== 2. Defining the Application Deployment (8 Manifests)
 
-We must define two things for our application: the **Deployment** (which manages the running pods and guarantees replicas) and the **Service** (which provides a stable network endpoint for the pods).
+The application stack requires eight separate YAML manifests to define persistence, networking, security, and deployment units.
 
-=== Apply Initial Deployment
+=== Apply Persistence and Network Policy
+
+We first apply the security and storage infrastructure.
+
 [source,shell]
 ----
+# 1. Apply Persistent Volume Claim (Required by order-service for /data persistence)
+$ sudo kubectl apply -f volumeclaim.yml
+
+# 2. Apply Network Policy (CRITICAL: Enforces internal communication and denies external access)
+$ sudo kubectl apply -f networkpolicy.yml
+----
+
+=== Apply Deployment and Service Manifests
+
+We apply the core application components.
+
+[source,shell]
+----
+# 1. Apply Deployments (Creates the Pods and sets resource limits/security context)
 $ sudo kubectl apply -f deployment.yml
-----
 
-=== Apply Service
-
-[source,shell]
-----
+# 2. Apply Internal ClusterIP Services (Enables internal DNS resolution: order-service -> inventory-service)
 $ sudo kubectl apply -f service.yml
 ----
 
@@ -130,10 +143,9 @@ Applying the deployment YAML again forces the scheduler to restart the pods. Sin
 
 [source,shell]
 ----
+# We delete the failed resources and reapply them to force a clean pull attempt
 $ sudo kubectl delete -f deployment.yml
 $ sudo kubectl apply -f deployment.yml
-$ sudo kubectl delete -f service.yml
-$ sudo kubectl apply -f service.yml
 ----
 
 Check the status:
@@ -170,6 +182,9 @@ $ curl http://127.0.0.1:30002/view_orders
 
 [source,shell]
 ----
+# Delete all external services first
+$ sudo kubectl delete -f nodeport.yml
+
 # Delete all resources in the pharmacy namespace
 $ sudo kubectl delete ns pharmacy
 
