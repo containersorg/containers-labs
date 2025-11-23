@@ -36,8 +36,8 @@ spec:
   selector:
     app: inventory-service
   ports:
-    - port: 5004
-      targetPort: 5004
+    - port: 5001
+      targetPort: 5001
   type: ClusterIP
 
 ---
@@ -50,7 +50,7 @@ spec:
   selector:
     app: order-service
   ports:
-    - port: 5004
-      targetPort: 5004
+    - port: 5002
+      targetPort: 5002
   type: ClusterIP
 ...

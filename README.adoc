@@ -17,7 +17,7 @@ We install K3s as a system service. (Be patience, this process takes some minute
 $ curl -sfL https://get.k3s.io | sh -
 ----
 
-The k3s server can be started and stopped with the following commands:
+The k3s server can be reviewed and managed with the following commands:
 
 [source,shell]
 ----
@@ -58,34 +58,26 @@ Namespaces provide logical isolation within the Kubernetes cluster.
 [source,shell]
 ----
 $ sudo kubectl apply -f namespace.yml
-namespace/pharmacy created
 ----
 
 == 2. Defining the Application Deployment
 
 We must define two things for our application: the **Deployment** (which manages the running pods and guarantees replicas) and the **Service** (which provides a stable network endpoint for the pods).
 
-// # ... Repeat Deployment and Service for inventory-service (Port 5001)
-// # ... Repeat Deployment and Service for customer-service (Port 5003)
-// # ... Repeat Deployment and Service for order-service (Port 5002, with Volume claim)
-
-== 3. Troubleshooting Image Access
-
 === Apply Initial Deployment
-
 [source,shell]
 ----
-$ sudo kubectl apply -f deployment.yaml
-deployment.apps/billing-deployment created
+$ sudo kubectl apply -f deployment.yml
 ----
 
 === Apply Service
 
 [source,shell]
 ----
-$ sudo kubectl apply -f service.yaml
-service/billing-service created
+$ sudo kubectl apply -f service.yml
 ----
+
+== 3. Troubleshooting Image Access
 
 === Encountering the ImagePullBackOff Error
 
@@ -138,11 +130,10 @@ Applying the deployment YAML again forces the scheduler to restart the pods. Sin
 
 [source,shell]
 ----
-$ sudo kubectl apply -f deployment.yaml
-deployment.apps/billing-deployment configured
-
-$ sudo kubectl apply -f service.yaml
-service/billing-service configured
+$ sudo kubectl delete -f deployment.yml
+$ sudo kubectl apply -f deployment.yml
+$ sudo kubectl delete -f service.yml
+$ sudo kubectl apply -f service.yml
 ----
 
 Check the status:

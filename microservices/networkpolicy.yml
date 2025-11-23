@@ -1,0 +1,29 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-internal-traffic
+  namespace: pharmacy
+spec:
+  # 1. Apply this policy to ALL pods in the pharmacy namespace
+  podSelector: {} 
+  
+  # 2. Define the types of traffic to enforce
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  # 3. EGRESS (Outgoing): Allow traffic to other pods in the namespace
+  # This allows Order service to call Inventory service
+  egress:
+  - to:
+    - podSelector: {} # Allow outgoing to any pod in this namespace
+    - namespaceSelector: {} # Allow outgoing to other namespaces (optional, safer to restrict)
+  - ports:
+    - protocol: TCP
+      port: 53 # DNS (Required for all pods to function)
+      
+  # 4. INGRESS (Incoming): Only allow traffic from pods in the same namespace
+  ingress:
+  - from:
+    - podSelector: {} # Allow incoming from any pod within the same namespace

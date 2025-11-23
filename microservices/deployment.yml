@@ -21,6 +21,13 @@ spec:
             - containerPort: 5004
           command: ["python3"]
           args: ["billing_service.py"]
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 256Mi
+              cpu: 200m
 
 ---
 apiVersion: apps/v1
@@ -45,6 +52,13 @@ spec:
             - containerPort: 5003
           command: ["python3"]
           args: ["customer_service.py"]
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 256Mi
+              cpu: 200m
 
 ---
 apiVersion: apps/v1
@@ -69,6 +83,13 @@ spec:
             - containerPort: 5001
           command: ["python3"]
           args: ["inventory_service.py"]
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 256Mi
+              cpu: 200m
 
 ---
 apiVersion: apps/v1
@@ -93,4 +114,17 @@ spec:
             - containerPort: 5002
           command: ["python3"]
           args: ["order_service.py"]
-...
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 256Mi
+              cpu: 200m
+          volumeMounts:
+            - name: order-storage
+              mountPath: /data
+      volumes:
+        - name: order-storage
+          persistentVolumeClaim:
+            claimName: order-data-pvc
