@@ -6,9 +6,17 @@ We have advanced significantly in the creation of our application, but we are st
 
 To automate the entire application stack deployment and lifecycle, we will use **Compose** (via `podman-compose` or `docker-compose`).
 
+Ensure all running containers are stopped and removed as well as defined networks.
+
+[source,shell]
+----
+$ podman rm -fa
+$ podman network remove pharmacy
+----
+
 == 1. Prerequisites
 
-Ensure you have either `podman-compose` or `docker-compose` installed and the final, unified image from Lab 9 is ready.
+Ensure you have either `podman-compose` or `docker-compose` installed and the final `v5`, unified image ready.
 
 [source,shell]
 ----
@@ -21,7 +29,7 @@ The `compose.yml` file declaratively defines all parts of our application: servi
 
 == 3. Deployment and Lifecycle Management
 
-Compose manages the creation of volumes, networks, and containers automatically based on the `compose.yaml` file.
+Compose manages the creation of volumes, networks, and containers automatically based on the `compose.yml` file.
 
 === Bring Services Up
 
@@ -32,7 +40,15 @@ Bring our services up in detached mode. Compose will automatically create the ne
 $ podman-compose up -d
 ----
 
-NOTE: Notice that new networks, volumes, and containers were created, all typically prepended with the name of our project directory (e.g., `lab12_pharmacy_app_network`).
+NOTE: Notice that new networks, volumes, and containers were created, all typically prepended with the name of our project directory.
+
+[source,shell]
+----
+$ podman container ls
+$ podman network ls
+$ podman pod ls
+$ podman volume ls
+----
 
 === Verify Application Health
 
