@@ -119,7 +119,7 @@ $ podman run -ti --name authenticator \
     localhost/authenticator:v2
 Enter your username: user123
 Enter your password: password123
-Welcome, user123! Authentication successful
+Welcome, user123! Authentication successful.
 ----
 
 This final stage is the **most secure practice** for container deployment, ensuring sensitive data is protected using the platform's native secrets management features.
