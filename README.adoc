@@ -6,7 +6,7 @@
 
 After running the tests in Lab 2, notice that the `view_orders` service always returns an empty list, regardless of the POST requests we send. This indicates the service is **failing to store the order** in memory.
 
-NOTICE: There is no need to stop any services other than the `order_service` at this point. A new version of the `order_service.py` file has been provided by the engineering team and is already in our `microservices` directory.
+NOTE: There is no need to stop any services other than the `order_service` at this point. A new version of the `order_service.py` file has been provided by the engineering team and is already in our `microservices` directory.
 
 === Updating the Order Service Code
 
