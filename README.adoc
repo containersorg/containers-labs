@@ -10,7 +10,7 @@ We will use K3s, a lightweight, easy-to-install Kubernetes distribution designed
 
 === Install K3s
 
-We install K3s as a system service. (Be patience, this process takes some minutes.)
+We install K3s as a system service. (Be patient, this process takes some minutes.)
 
 [source,shell]
 ----
