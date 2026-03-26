@@ -71,7 +71,7 @@ do
 done
 ----
 
-Now, install `Flask` and `requests` libraries on every container, but this time let's use a list in file to avoid repetition. Create a file named `pharmacy.svc` with the following content:
+Now, install `Flask` and `requests` libraries on every container, but this time let's use a list in a file to avoid repetition. Create a file named `pharmacy.svc` with the following content:
 
 [source,ini]
 ----
