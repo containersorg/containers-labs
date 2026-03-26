@@ -10,7 +10,7 @@ image::images/micro.png[400,400,align=center]
 
 === The Microservices Breakdown
 
-[%header,cols="2,3,^1,1",align="center",stripe="even",width="100%"]
+[%header,cols="2,3,^1,1",align="center",stripes="even",width="100%"]
 |===
 ^| Service              ^| Responsibility                                                   ^| Port     ^| File
 | Inventory Management  | Handles all operations related to inventory stock and pricing.    | `5001`    | `inventory_service.py`
