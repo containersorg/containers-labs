@@ -27,7 +27,7 @@ WARNING: Ensure you have terminated the monolithic application from Lab 1 (`CTRL
 
 === Verify Service Ports
 
-Change to the microservices direction and use `grep` to confirm that each file is configured to run on its designated port:
+Change to the microservices directory and use `grep` to confirm that each file is configured to run on its designated port:
 
 [source,shell]
 ----
