@@ -52,6 +52,11 @@
             name: rpmfusion-*-release
             state: present
 
+        - name: Enable copr repositories scottames/ghostty
+          ansible.builtin.dnf:
+            name: scottames/ghostty
+            state: present
+
       rescue: []
 
     - name: Installing packages for complete desktop
@@ -108,7 +113,8 @@
           - vim
           - wget
           - fuse-sshfs
-          - terminator
+          - ghostty
+          - jetbrains-mono-fonts
           - git
           - ranger
           - code
@@ -162,6 +168,29 @@
               let mapleader = ","
             force: false
 
+        - name: Ensure ghostty configuration folder exists
+          ansible.builtin.file:
+            path: /home/{{ username }}/.config/ghostty
+            state: directory
+            mode: "0755"
+            owner: "{{ username }}"
+            group: "{{ username }}"
+
+        - name: Configure ghostty configuration
+          ansible.builtin.copy:
+            dest: /home/{{ username }}/.config/ghostty/config.ghostty
+            mode: "0644"
+            owner: "{{ username }}"
+            group: "{{ username }}"
+            content: |
+              theme = 0x96f
+              font-family = "JetBrains Mono"
+              font-size = 13
+              cursor-style = block
+              cursor-style-blink = false
+              maximize = true
+              copy-on-select = true
+              scrollbar = never
       rescue: []
 
     - name: Configure Security
@@ -255,31 +284,15 @@
             - '/home/{{ username }}/.themes'
             - '/home/{{ username }}/.wallpapers'
 
-        - name: Set terminator configuration folder
-          ansible.builtin.file:
-            path: /etc/xdg/terminator
-            state: directory
-            mode: "0755"
-            owner: root
-            group: root
-
-        - name: Download Terminator Configuration
-          ansible.builtin.get_url:
-            url: https://raw.githubusercontent.com/jmedinar/testchecker/refs/heads/main/config
-            dest: /etc/xdg/terminator/config
-            mode: '0666'
-            owner: root
-            group: root
-
-        - name: Set Terminator custom-keybindings
+        - name: Set Ghostty custom-keybindings
           become: true
           become_user: "{{ username }}"
           vars:
             custom0: /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/
           ansible.builtin.shell: |
             gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "['{{ custom0 }}']"
-            gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{{ custom0 }} name 'Terminator'
-            gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{{ custom0 }} command 'terminator'
+            gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{{ custom0 }} name 'Ghostty'
+            gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{{ custom0 }} command 'ghostty'
             gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{{ custom0 }} binding '<Super>t'
           environment:
             DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
@@ -340,13 +353,11 @@
           become_user: "{{ username }}"
           vars:
             a1: org.mozilla.firefox.desktop
-            a2: terminator.desktop
-            a3: ranger.desktop
-            a4: geany.desktop
-            a5: code.desktop
-            a6: org.gnome.Nautilus.desktop
+            a2: ghostty.desktop
+            a3: code.desktop
+            a4: org.gnome.Nautilus.desktop
           ansible.builtin.shell: |
-            gsettings set org.gnome.shell favorite-apps "['{{ a1 }}','{{ a2 }}','{{ a3 }}','{{ a4 }}','{{ a5 }}','{{ a6 }}']"
+            gsettings set org.gnome.shell favorite-apps "['{{ a1 }}','{{ a2 }}','{{ a3 }}','{{ a4 }}']"
           environment:
             DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
           changed_when: false
