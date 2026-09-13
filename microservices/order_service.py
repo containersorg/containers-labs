@@ -1,5 +1,6 @@
 """service for orders with value retention"""
 from flask import Flask, json, request
+import os
 
 app = Flask(__name__)
 
@@ -32,4 +33,5 @@ def view_orders():
     return json.dumps({'orders': orders}, indent=4)
 
 if __name__ == '__main__':
-    app.run(port=5002)
+    # app.run(port=5002)
+    app.run(port=int(os.environ.get("ORDER_PORT", 5002)))

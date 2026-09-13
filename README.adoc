@@ -10,14 +10,18 @@ NOTE: There is no need to stop any services other than the `order_service` at th
 
 === Updating the Order Service Code
 
-1.  **Go to the terminal (Terminal B)** where the **`order_service`** is currently running (on port `5002`).
+Before starting this lab, run `./tools/assign-lab-ports.sh`.
+
+Use the `lab-ports` command at anytime to see your ports.
+
+1.  **Go to the terminal (Terminal B)** where the **`order_service`** is currently running (on port ${ORDER_PORT}).
 2.  Use the **`CTRL+C`** key combination to halt the running service.
 3.  Immediately restart the service using the new version in the same terminal:
 
 [source,shell]
 ----
 $ python3 order_service.py
- * Running on http://127.0.0.1:5002 (Press CTRL+C to quit)
+ * Running on http://127.0.0.1:${ORDER_PORT} (Press CTRL+C to quit)
 ----
 
 === Verify State Retention (POST/GET Test)
@@ -26,14 +30,14 @@ We will now place an order and verify that the data persists after the fix.
 
 [source,shell]
 ----
-# 1. Place a new order using POST method, targeting port 5002
+# 1. Place a new order using POST method, targeting port ${ORDER_PORT}
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
+    http://localhost:${ORDER_PORT}/place_order
 
 # 2. Verify the order exists by querying the Order Processing Service
-$ curl http://127.0.0.1:5002/view_orders
+$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 
 {
   "orders": [
@@ -60,16 +64,16 @@ If we attempt to place an order for more items than are in stock, the order serv
 
 [source,shell]
 ----
-# 1. Place a new order using POST method, targeting port 5002
+# 1. Place a new order using POST method, targeting port ${ORDER_PORT}
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 500}' \
-    http://localhost:5002/place_order
+    http://localhost:${ORDER_PORT}/place_order
 ----
 
 == 2. Enabling Inter-Service Communication
 
-To make our microservices truly functional, the **Order Service** needs to perform an API call to the **Inventory Service (5001)** before finalizing an order.
+To make our microservices truly functional, the **Order Service** needs to perform an API call to the **Inventory Service (${INVENTORY_PORT})** before finalizing an order.
 
 A new version of the order service code that includes this API logic has been provided in the `fix` directory.
 
@@ -92,7 +96,7 @@ Go back to **Terminal B**, halt the running `order_service` (`CTRL+C`), and run 
 [source,shell]
 ----
 $ python3 order_service.py
- * Running on http://127.0.0.1:5002 (Press CTRL+C to quit)
+ * Running on http://127.0.0.1:${ORDER_PORT} (Press CTRL+C to quit)
 ----
 
 === Test Stock Validation
@@ -101,11 +105,11 @@ We know `medicine_A` only has a stock of **100**. Try placing an order with more
 
 [source,shell]
 ----
-# Attempt to order 150 units of medicine_A (Stock is only 100 on port 5001)
+# Attempt to order 150 units of medicine_A (Stock is only 100 on port ${INVENTORY_PORT})
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 150}' \
-    http://localhost:5002/place_order
+    http://localhost:${ORDER_PORT}/place_order
 
 {
   "error": "Insufficient stock for medicine_A. Only 100 units available."
