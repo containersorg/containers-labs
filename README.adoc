@@ -47,10 +47,10 @@ $ podman rm -f inventory_service order_service customer_service billing_service
 
 [source,shell]
 ----
-$ podman run --name inventory_service --network host -d localhost/pharmacy:v2 inventory_service.py
-$ podman run --name order_service --network host -d localhost/pharmacy:v2 order_service.py
-$ podman run --name customer_service --network host -d localhost/pharmacy:v2 customer_service.py
-$ podman run --name billing_service --network host -d localhost/pharmacy:v2 billing_service.py
+podman run --name inventory_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v2 inventory_service.py
+podman run --name order_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v2 order_service.py
+podman run --name customer_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v2 customer_service.py
+podman run --name billing_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v2 billing_service.py
 ----
 
 Verify that all containers are running:
