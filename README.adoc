@@ -6,6 +6,10 @@ But wait! Just as we did in the manual procedure (Lab 5), we proved that the fou
 
 The goal is to create the most efficient and maintainable image possible by using the **unified image pattern**.
 
+Before starting this lab, run `./tools/assign-lab-ports.sh`.
+
+Use the `lab-ports` command at anytime to see your ports.
+
 == 1. The Unified Containerfile
 
 We define a single `Containerfile` that contains all the shared dependencies and *all* the application code. We use the **`ENTRYPOINT`** instruction to define the *fixed* part of the command (`python3`), and rely on the runtime arguments (the script name) to complete the command.
@@ -62,11 +66,11 @@ The application should run successfully, demonstrating maximum image efficiency.
 
 === Verify Connectivity
 
-Test the Inventory Service (Port 5001) using the loopback address (`0.0.0.0` or `127.0.0.1`):
+Test the Inventory Service (Port ${INVENTORY_PORT}) using the loopback address (`0.0.0.0` or `127.0.0.1`):
 
 [source,shell]
 ----
-$ curl http://127.0.0.1:5001/view_inventory
+$ curl http://127.0.0.1:${INVENTORY_PORT}/view_inventory
 {"inventory":{"medicine_A":{"price":10,"stock":100},"medicine_B":{"price":15,"stock":50}}}
 ----
 
@@ -74,14 +78,14 @@ $ curl http://127.0.0.1:5001/view_inventory
 
 [source,shell]
 ----
-# Place a test order, targeting port 5002
+# Place a test order, targeting port ${ORDER_PORT}
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
+    http://localhost:${ORDER_PORT}/place_order
 
 # Verify the order exists
-$ curl http://127.0.0.1:5002/view_orders
+$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 ----
 
 == 4. Conclusion
