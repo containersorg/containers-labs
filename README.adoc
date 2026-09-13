@@ -18,6 +18,10 @@ To retain their current state permanently and create a reusable artifact, we mus
 
 == 1. Committing Containers to New Images
 
+Before starting this lab, run `./tools/assign-lab-ports.sh`.
+
+Use the `lab-ports` command at anytime to see your ports.
+
 The `podman commit` command creates a new image by flattening the container's current state (including the writable layer where we installed dependencies and copied files) into a new, read-only image layer.
 
 === Commit Running Containers
@@ -86,17 +90,17 @@ The application should function identically to the end of Lab 2/Fix, but the set
 
 === Verify Connectivity
 
-Use a free terminal to verify the Inventory Service (Port 5001) is running:
+Use a free terminal to verify the Inventory Service (Port ${INVENTORY_PORT}) is running:
 
 [source,shell]
 ----
-$ curl http://127.0.0.1:5001/view_inventory
+$ curl http://127.0.0.1:${INVENTORY_PORT}/view_inventory
 {"inventory":{...}} 
 ----
 
 === Cross-Service Validation (Order Placement)
 
-Verify that the Order Service (Port 5002) can still communicate with the Inventory Service (Port 5001) to check stock.
+Verify that the Order Service (Port ${ORDER_PORT}) can still communicate with the Inventory Service (Port ${INVENTORY_PORT}) to check stock.
 
 [source,shell]
 ----
@@ -104,10 +108,10 @@ Verify that the Order Service (Port 5002) can still communicate with the Invento
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
+    http://localhost:${ORDER_PORT}/place_order
 
 # Verify the order exists on port 5002
-$ curl http://127.0.0.1:5002/view_orders
+$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 ----
 
 == 4. Conclusion
