@@ -4,6 +4,10 @@
 
 The final step in containerization is ensuring we handle sensitive data (like credentials) securely, preventing them from being accidentally committed to source code or exposed in deployment commands.
 
+Before starting this lab, run `./tools/assign-lab-ports.sh`.
+
+Use the `lab-ports` command at anytime to see your ports.
+
 == 1. Hardcoded Credentials (Insecure Base)
 
 The initial version of our application, `auth.py`, contains the credentials hardcoded within the script itself.
