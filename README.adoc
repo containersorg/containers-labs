@@ -13,10 +13,10 @@ image::images/micro.png[400,400,align=center]
 [%header,cols="2,3,^1,1",align="center",stripes="even",width="100%"]
 |===
 ^| Service              ^| Responsibility                                                   ^| Port     ^| File
-| Inventory Management  | Handles all operations related to inventory stock and pricing.    | `5001`    | `inventory_service.py`
-| Order Processing      | Oversees order placement and tracking.                            | `5002`    | `order_service.py`
-| Customer Management   | Dedicated to handling customer information and details.           | `5003`    | `customer_service.py`
-| Billing Service       | Responsible for managing billing and payment processes.           | `5004`    | `billing_service.py`
+| Inventory Management  | Handles all operations related to inventory stock and pricing.    | `${INVENTORY_PORT}`    | `inventory_service.py`
+| Order Processing      | Oversees order placement and tracking.                            | `${ORDER_PORT}`    | `order_service.py`
+| Customer Management   | Dedicated to handling customer information and details.           | `${CUSTOMER_PORT}`    | `customer_service.py`
+| Billing Service       | Responsible for managing billing and payment processes.           | `${BILLING_PORT}`    | `billing_service.py`
 |===
 
 == 2. Starting the Services Independently
