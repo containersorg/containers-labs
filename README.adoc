@@ -6,9 +6,12 @@ But wait! Just as we did in the manual procedure (Lab 5), we proved that the fou
 
 The goal is to create the most efficient and maintainable image possible by using the **unified image pattern**.
 
-Before starting this lab, run `./tools/assign-lab-ports.sh`.
+[NOTE]
+====
+Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
 
 Use the `lab-ports` command at anytime to see your ports.
+====
 
 == 1. The Unified Containerfile
 
