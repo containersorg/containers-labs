@@ -6,11 +6,14 @@ Up to this point, our approach has been implemented *manually*. This is not effi
 
 We will now use **Containerfiles** (sometimes called Dockerfiles) to automate the entire process. A Containerfile is a text file containing declarative instructions for building an image.
 
-== The Declarative Approach
-
-Before starting this lab, run `./tools/assign-lab-ports.sh`.
+[NOTE]
+====
+Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
 
 Use the `lab-ports` command at anytime to see your ports.
+====
+
+== The Declarative Approach
 
 Notice how each `Containerfile` is an automated replica of the manual steps we performed in Lab 3:
 
@@ -80,10 +83,10 @@ Run all four containers using the images we just built. The `podman run` command
 
 [source,shell]
 ----
-$ podman run --name inventory_service --network host -e INVENTORY_PORT=${INVENTORY_PORT} -d localhost/inventory_image:manual python3 inventory_service.py
-$ podman run --name customer_service --network host -e CUSTOMER_PORT=${CUSTOMER_PORT} -d localhost/customer_image:manual python3 customer_service.py
-$ podman run --name billing_service --network host -e BILLING_PORT=${BILLING_PORT} -d localhost/billing_image:manual python3 billing_service.py
-$ podman run --name order_service --network host -e ORDER_PORT=${ORDER_PORT} -e INVENTORY_PORT=${INVENTORY_PORT} -d localhost/order_image:manual python3 order_service.py
+$ podman run --name inventory_service --network host --env-file ~/.containers-labs.env -d localhost/inventory_image:manual python3 inventory_service.py
+$ podman run --name customer_service --network host --env-file ~/.containers-labs.env -d localhost/customer_image:manual python3 customer_service.py
+$ podman run --name billing_service --network host --env-file ~/.containers-labs.env -d localhost/billing_image:manual python3 billing_service.py
+$ podman run --name order_service --network host --env-file ~/.containers-labs.env -d localhost/order_image:manual python3 order_service.py
 ----
 
 Verify that all four services are running:
