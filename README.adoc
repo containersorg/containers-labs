@@ -110,7 +110,7 @@ $ curl -X POST \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
     http://localhost:${ORDER_PORT}/place_order
 
-# Verify the order exists on port 5002
+# Verify the order exists on port ${ORDER_PORT}
 $ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 ----
 
