@@ -10,7 +10,11 @@ Each container will be treated as a new, minimal Linux server. All dependencies 
 
 IMPORTANT: Be sure all previously executed services from Lab 2 are stopped by closing the four terminals where the services were running.
 
-=== Create and Run Containers
+== Create and Run Containers
+
+Before starting this lab, run `./tools/assign-lab-ports.sh`.
+
+Use the `lab-ports` command at anytime to see your ports.
 
 Open a terminal and execute the following commands to create the four service containers:
 
@@ -30,7 +34,7 @@ $ podman run --name billing_service --network host -dti fedora /bin/bash
 
 [IMPORTANT]
 ====
-A Note on Container Networking: We use the *Host Network Mode* (`--network host`) in these commands. This flag disables network isolation, meaning a service running on port 5001 inside a container is identical to a service running on port 5001 on the host itself. This simplifies cross-container communication for this lab.
+A Note on Container Networking: We use the *Host Network Mode* (`--network host`) in these commands. This flag disables network isolation, meaning a service running on port ${INVENTORY_PORT} inside a container is identical to a service running on port ${INVENTORY_PORT} on the host itself. This simplifies cross-container communication for this lab.
 ====
 
 == Verify Running Containers
@@ -150,18 +154,18 @@ Because we used the `--network host` flag, the microservices are accessible dire
 
 === Cross-Service Communication Test
 
-We will test the complex workflow of placing an order, which requires the Order Service (5002) to communicate with the Inventory Service (5001).
+We will test the complex workflow of placing an order, which requires the Order Service (${ORDER_PORT}) to communicate with the Inventory Service (${INVENTORY_PORT}).
 
 [source,shell]
 ----
-# 1. Place a new order using POST method, targeting port 5002
+# 1. Place a new order using POST method, targeting port ${ORDER_PORT}
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
+    http://localhost:${ORDER_PORT}/place_order
 
-# 2. Verify the order exists by querying the Order Processing Service (5002)
-$ curl http://127.0.0.1:5002/view_orders
+# 2. Verify the order exists by querying the Order Processing Service (${ORDER_PORT})
+$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 
 {
   "orders": [
