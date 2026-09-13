@@ -6,9 +6,12 @@ Until now, we have been using the Host Network Mode (`--network host`). This met
 
 The goal of this lab is to create a dedicated network for our application, allowing the containers to work in isolation from the host but still communicate with each other internally.
 
-Before starting this lab, run `./tools/assign-lab-ports.sh`.
+[NOTE]
+====
+Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
 
 Use the `lab-ports` command at anytime to see your ports.
+====
 
 == 1. Creating the Isolated Bridge Network
 
@@ -65,10 +68,10 @@ We now deploy the containers using two critical flags:
 [source,shell]
 ----
 $ podman rm -f inventory_service customer_service billing_service order_service
-$ podman run --name inventory_service --network pharmacy -p ${INVENTORY_PORT}:5001 -d localhost/pharmacy:v5 inventory_service.py
-$ podman run --name customer_service --network pharmacy -p ${CUSTOMER_PORT}:5003  -d localhost/pharmacy:v5 customer_service.py
-$ podman run --name billing_service --network pharmacy -p ${BILLING_PORT}:5004  -d localhost/pharmacy:v5 billing_service.py
-$ podman run --name order_service --network pharmacy -v pharmacy_orders_data:/data:rw -p ${ORDER_PORT}:5002  -d localhost/pharmacy:v5 order_service.py
+$ podman run --name inventory_service --network pharmacy --env-file ~/.containers-labs.env -p ${INVENTORY_PORT}:5001 -d localhost/pharmacy:v5 inventory_service.py
+$ podman run --name customer_service --network pharmacy --env-file ~/.containers-labs.env -p ${CUSTOMER_PORT}:5003  -d localhost/pharmacy:v5 customer_service.py
+$ podman run --name billing_service --network pharmacy --env-file ~/.containers-labs.env -p ${BILLING_PORT}:5004  -d localhost/pharmacy:v5 billing_service.py
+$ podman run --name order_service --network pharmacy --env-file ~/.containers-labs.env -v pharmacy_orders_data:/data:rw -p ${ORDER_PORT}:5002  -d localhost/pharmacy:v5 order_service.py
 ----
 
 Verify that all containers are running:
