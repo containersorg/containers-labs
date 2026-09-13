@@ -1,6 +1,6 @@
 """Script that simulates a pharmaceutical system"""
 from flask import Flask, request, json
-
+import os
 
 app = Flask(__name__)
 
@@ -82,4 +82,5 @@ def view_customer(customer_id):
     return json.dumps({'customer_details': customers[customer_id]}, indent=4)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # app.run(debug=True)
+    app.run(debug=True, port=int(os.environ.get("MONO_PORT", 5000)))

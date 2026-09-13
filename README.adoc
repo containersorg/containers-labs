@@ -18,6 +18,10 @@ NOTE: The `monolithic` directory hosts our application files for this lab.
 
 === Application Pre-requisites (Host Installation)
 
+Before starting this lab, run `./tools/assign-lab-ports.sh`.
+
+Use the `lab-ports` command at anytime to see your ports.
+
 Given that our pharmacy application is developed in `Python` using the `FLASK` framework, we must manually install all dependencies directly onto our host system.
 
 [source,shell]
