@@ -4,9 +4,12 @@
 
 In a containerized environment, effective troubleshooting relies on system tools, performance monitoring, and self-healing configurations.
 
-Before starting this lab, run `./tools/assign-lab-ports.sh`.
+[NOTE]
+====
+Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
 
 Use the `lab-ports` command at anytime to see your ports.
+====
 
 == 1. Debugging and Logging
 
