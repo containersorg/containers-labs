@@ -8,10 +8,13 @@ To achieve this, the `order_service.py` has been modified to store orders in a f
 
 This persistence mechanism relies on three steps: read existing orders from the file, update orders, and write changes back to the file.
 
-Before starting this lab, run `./tools/assign-lab-ports.sh`.
+[NOTE]
+====
+Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
 
 Use the `lab-ports` command at anytime to see your ports.
-
+====
+  
 == 1. Debugging the Missing Directory
 
 Since we have new code, we need to rebuild the images and create new containers.

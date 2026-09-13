@@ -8,8 +8,7 @@ app = Flask(__name__)
 
 # File to store orders
 ORDERS_FILE = '/data/orders.json'
-# INVENTORY_API_URL = "http://127.0.0.1:5001"
-INVENTORY_API_URL = f"http://127.0.0.1:{os.environ.get('INVENTORY_PORT', 5001)}"
+INVENTORY_API_URL = os.environ.get("INVENTORY_API_URL", "http://127.0.0.1:5001")
 
 # Create the orders file if it doesn't exist                                                   
 if not os.path.exists(ORDERS_FILE):
