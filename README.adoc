@@ -10,20 +10,23 @@ Each container will be treated as a new, minimal Linux server. All dependencies 
 
 IMPORTANT: Be sure all previously executed services from Lab 2 are stopped by closing the four terminals where the services were running.
 
-== Create and Run Containers
-
-Before starting this lab, run `./tools/assign-lab-ports.sh`.
+[NOTE]
+====
+Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
 
 Use the `lab-ports` command at anytime to see your ports.
+====
+
+== Create and Run Containers
 
 Open a terminal and execute the following commands to create the four service containers:
 
 [source,shell]
 ----
-$ podman run --name inventory_service --network host -dti fedora /bin/bash
-$ podman run --name order_service --network host -dti fedora /bin/bash
-$ podman run --name customer_service --network host -dti fedora /bin/bash
-$ podman run --name billing_service --network host -dti fedora /bin/bash
+$ podman run --name inventory_service --network host --env-file ~/.containers-labs.env -dti fedora /bin/bash
+$ podman run --name order_service --network host --env-file ~/.containers-labs.env -dti fedora /bin/bash
+$ podman run --name customer_service --network host --env-file ~/.containers-labs.env -dti fedora /bin/bash
+$ podman run --name billing_service --network host --env-file ~/.containers-labs.env -dti fedora /bin/bash
 ----
 
 [NOTE]
