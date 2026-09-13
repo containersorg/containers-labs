@@ -1,5 +1,12 @@
 = Lab 2 - Microservices Architecture
 
+[NOTE]
+====
+Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
+
+Use the `lab-ports` command at anytime to see your ports.
+====
+
 == 1. Decomposing the Monolith
 
 To transition from the monolithic application, we segment functionalities into **four distinct Flask applications**, each representing a separate service domain. This allows for independent development, deployment, and scaling.
@@ -27,9 +34,6 @@ WARNING: Ensure you have terminated the monolithic application from Lab 1 (`CTRL
 
 === Verify Service Ports
 
-Before starting this lab, run `./tools/assign-lab-ports.sh`.
-
-Use the `lab-ports` command at anytime to see your ports.
 
 Change to the microservices directory and use `grep` to confirm that each file is configured to run on its designated port:
 
@@ -72,7 +76,7 @@ $ curl http://127.0.0.1:${INVENTORY_PORT}/view_inventory
 {"inventory":{...}} 
 # Output: Success. Inventory data is returned.
 
-# TEST 2: Requesting Inventory data on the Order Service port (5002) (incorrect)
+# TEST 2: Requesting Inventory data on the Order Service port {ORDER_PORT} (incorrect)
 $ curl http://127.0.0.1:${ORDER_PORT}/view_inventory
 <!doctype html>
 <html lang=en>
@@ -140,6 +144,6 @@ $ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 
 == 4. Conclusion: Independent Scaling and Resilience
 
-In this microservices model, if the **Inventory Management Service (5001)** fails, the **Order Processing Service (5002)** and the **Customer Management Service (5003)** would remain running, allowing partial functionality to continue.
+In this microservices model, if the **Inventory Management Service {INVENTORY_PORT}** fails, the **Order Processing Service {ORDER_PORT}** and the **Customer Management Service {CUSTOMER_PORT}** would remain running, allowing partial functionality to continue.
 
 This architecture naturally leads to containerization, as it provides a clean way to package each isolated service with its specific dependencies and manage its lifecycle independently. 
