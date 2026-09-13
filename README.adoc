@@ -6,6 +6,13 @@
 
 We will use K3s, a lightweight, easy-to-install Kubernetes distribution designed for local development and testing.
 
+[NOTE]
+====
+Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
+
+Use the `lab-ports` command at anytime to see your ports.
+====
+
 == 1. Setting Up the K3s Cluster
 
 === Install K3s
