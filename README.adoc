@@ -8,6 +8,10 @@ To achieve this, the `order_service.py` has been modified to store orders in a f
 
 This persistence mechanism relies on three steps: read existing orders from the file, update orders, and write changes back to the file.
 
+Before starting this lab, run `./tools/assign-lab-ports.sh`.
+
+Use the `lab-ports` command at anytime to see your ports.
+
 == 1. Debugging the Missing Directory
 
 Since we have new code, we need to rebuild the images and create new containers.
@@ -108,11 +112,11 @@ The service should now be running. Let's test the service by placing an order.
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
+    http://localhost:${ORDER_PORT}/place_order
 
   # 2. Verify the order was successfully added and read back
 
-$ curl http://127.0.0.1:5002/view_orders
+$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 
   # 3. Check the file inside the container's filesystem
 
@@ -183,11 +187,11 @@ Place one new order and then stop the container to prove the data persists exter
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_2", "medicine": "medicine_B", "quantity": 10}' \
-    http://localhost:5002/place_order
+    http://localhost:${ORDER_PORT}/place_order
 
   # 2. Verify the order was successfully added and read back
 
-$ curl http://127.0.0.1:5002/view_orders
+$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 
   # 3. Check the file inside the container's filesystem
 
