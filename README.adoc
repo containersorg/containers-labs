@@ -92,10 +92,10 @@ We will now run all services again, but every container will be instantiated fro
 
 [source,shell]
 ----
-$ podman run --rm --name inventory_service --network host -d localhost/pharmacy:manual python3 inventory_service.py
-$ podman run --rm --name order_service --network host -d localhost/pharmacy:manual python3 order_service.py
-$ podman run --rm --name customer_service --network host -d localhost/pharmacy:manual python3 customer_service.py
-$ podman run --rm --name billing_service --network host -d localhost/pharmacy:manual python3 billing_service.py
+$ podman run --name inventory_service --network host -e INVENTORY_PORT=${INVENTORY_PORT} -d localhost/inventory_image:manual python3 inventory_service.py
+$ podman run --name customer_service --network host -e CUSTOMER_PORT=${CUSTOMER_PORT} -d localhost/customer_image:manual python3 customer_service.py
+$ podman run --name billing_service --network host -e BILLING_PORT=${BILLING_PORT} -d localhost/billing_image:manual python3 billing_service.py
+$ podman run --name order_service --network host -e ORDER_PORT=${ORDER_PORT} -e INVENTORY_PORT=${INVENTORY_PORT} -d localhost/order_image:manual python3 order_service.py
 ----
 
 Notice that now, with a **single image**, we are running all four services, which is much more efficient and easier to manage in a registry.
