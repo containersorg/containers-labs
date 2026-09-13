@@ -1,0 +1,122 @@
+== Problem
+
+The original code presents a port collision problem when multiple users are sharing the same machine to run the labs. The solution is to use a different port for each user.
+
+IMPORTANT: Under this model `lab-13` will be skipped because Kubernetes has its own port management (NodePort, Services) and the offset approach doesn't apply cleanly to K8s NodePorts.
+
+Across the lab branches, ports are hardcoded in a consistent pattern:
+
+[%header,cols="1,1,1",align=center,stripes=even,width="100%"]
+|===
+| Lab(s)	| Mode	| Ports that collide on the host
+| lab-01	| Python directly on host	| 5000 (Flask default)  
+| lab-03 → lab-08	| --network host + app.run(port=500x)	| 5001–5004
+| lab-09 → lab-12	| Bridge network + -p 500x:500x	| Left side of publish (5001–5004)
+| lab-12	| compose.yml	| Published host ports 5001–5004
+|===
+
+Internal container ports (5001) from lab-09 onward do not need to change if you only offset the host side of port maps.
+
+Where `order_service.py` calls inventory via localhost:
+
+[source,python]
+----
+INVENTORY_API_URL = "http://127.0.0.1:5001"
+----
+
+That URL must follow whatever inventory port the student is actually using on the host.
+
+== Solution
+
+Use a deterministic, admin-assigned offset once per student, stored in something like `~/.containers-labs.env` and never regenerated unless you intentionally reassign.
+
+The approach is to generate an environment file for each student and centralize port configuration.
+
+At the main branch, I have created a script to generate the environment file for each student:
+
+[source,bash]
+----
+./tools/assign-lab-ports.sh
+----
+
+=== Code changes
+
+Small Python changes (apply across lab branches)
+
+For lab-01:
+
+[source,python]
+----
+import os
+app.run(debug=True, port=int(os.environ.get("MONO_PORT", 5000)))
+----
+
+For lab-02 to lab-08:
+
+[source,python]
+----
+import os
+app.run(host="127.0.0.1", port=int(os.environ.get("INVENTORY_PORT", 5001)))
+----
+
+For lab-09 to lab-12:
+
+[source,python]
+----
+import os
+app.run(host="0.0.0.0", port=int(os.environ.get("ORDER_PORT", 5002)))
+----
+
+This is a small change that will allow the inventory service to use the correct port.
+
+In order_service.py:
+
+[source,python]
+----
+INVENTORY_API_URL = os.environ.get("INVENTORY_API_URL", "http://inventory_service:5001")
+----
+
+For lab-01 monolith:
+
+[source,python]
+----
+app.run(debug=True, port=int(os.environ.get("MONO_PORT", 5000)))
+----
+
+For Podman Compose:
+
+Only offset the host side (labs 09–12):
+
+[source,yaml]
+----
+podman run --network pharmacy -p ${INVENTORY_PORT}:5001 ...
+----
+
+In compose.yml:
+
+[source,yaml]
+----
+ports:
+  - "${INVENTORY_PORT}:5001"
+----
+
+Run with: `podman-compose --env-file ~/.containers-labs.env up`
+
+== Documentation
+
+Add a section to the README.adoc to explain the new approach.
+
+[source,text]
+----
+Before starting this lab, run `./tools/assign-lab-ports.sh`.
+
+Use the `lab-ports` command at anytime to see your ports.
+----
+
+Then change curl examples to use variables:
+
+[source,bash]
+----
+curl http://127.0.0.1:${INVENTORY_PORT}/view_inventory
+curl -X POST http://localhost:${ORDER_PORT}/place_order 
+----
