@@ -28,10 +28,10 @@ $ podman build -t pharmacy:v3 .
 $ podman rm -f inventory_service customer_service billing_service order_service
 
 # Run all four services using the new image
-$ podman run --name order_service --network host -d localhost/pharmacy:v3 order_service.py
-$ podman run --name inventory_service --network host -d localhost/pharmacy:v3 inventory_service.py
-$ podman run --name customer_service --network host -d localhost/pharmacy:v3 customer_service.py
-$ podman run --name billing_service --network host -d localhost/pharmacy:v3 billing_service.py
+$ podman run --name inventory_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v3 inventory_service.py
+$ podman run --name customer_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v3 customer_service.py
+$ podman run --name billing_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v3 billing_service.py
+$ podman run --name order_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v3 order_service.py
 ----
 
 We check the container status:
@@ -91,7 +91,7 @@ $ podman build -t pharmacy:v4 .
 $ podman rm -f order_service
 
 # Relaunch the order_service container
-$ podman run --name order_service --network host -d localhost/pharmacy:v4 order_service.py
+$ podman run --name order_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v4 order_service.py
 ---
 
 Verify all four services are running:
@@ -137,7 +137,7 @@ What if something happens to the container? Let's stop --> remove --> restart --
 ----
 $ podman stop order_service
 $ podman rm order_service
-$ podman run --name order_service --network host -d localhost/pharmacy:v4 order_service.py
+$ podman run --name order_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v4 order_service.py
 $ podman exec -ti order_service cat /data/orders.json
 ----
 
@@ -173,6 +173,7 @@ $ podman stop order_service
 $ podman rm order_service
 $ podman run --rm -d --name order_service --network host \
     -v pharmacy_orders_data:/data:rw \
+    --env-file ~/.containers-labs.env \
     localhost/pharmacy:v4 order_service.py
 ----
 
