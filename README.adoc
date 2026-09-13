@@ -10,15 +10,18 @@ This process is highly recommended because it:
 .  **Simplifies Updates:** To patch Python, you only rebuild one image, not four.
 .  **Encapsulates Code:** All application source code lives in a single, version-controlled unit.
 
+[NOTE]
+====
+Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
+
+Use the `lab-ports` command at anytime to see your ports.
+====
+
 == 1. Consolidating Source Code and Dependencies
 
 We will now commit a new image, `pharmacy:manual`, that contains *all* application source code.
 
 === Verify Current Code State
-
-Before starting this lab, run `./tools/assign-lab-ports.sh`.
-
-Use the `lab-ports` command at anytime to see your ports.
 
 Select the running `inventory_service` container from Lab 4 and inspect its file list. (If it's not running, start it again with the same command as in Lab 4.)
 
@@ -92,10 +95,10 @@ We will now run all services again, but every container will be instantiated fro
 
 [source,shell]
 ----
-$ podman run --name inventory_service --network host -e INVENTORY_PORT=${INVENTORY_PORT} -d localhost/inventory_image:manual python3 inventory_service.py
-$ podman run --name customer_service --network host -e CUSTOMER_PORT=${CUSTOMER_PORT} -d localhost/customer_image:manual python3 customer_service.py
-$ podman run --name billing_service --network host -e BILLING_PORT=${BILLING_PORT} -d localhost/billing_image:manual python3 billing_service.py
-$ podman run --name order_service --network host -e ORDER_PORT=${ORDER_PORT} -e INVENTORY_PORT=${INVENTORY_PORT} -d localhost/order_image:manual python3 order_service.py
+$ podman run --name inventory_service --network host --env-file ~/.containers-labs.env -d localhost/inventory_image:manual python3 inventory_service.py
+$ podman run --name customer_service --network host --env-file ~/.containers-labs.env -d localhost/customer_image:manual python3 customer_service.py
+$ podman run --name billing_service --network host --env-file ~/.containers-labs.env -d localhost/billing_image:manual python3 billing_service.py
+$ podman run --name order_service --network host --env-file ~/.containers-labs.env -d localhost/order_image:manual python3 order_service.py
 ----
 
 Notice that now, with a **single image**, we are running all four services, which is much more efficient and easier to manage in a registry.
