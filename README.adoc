@@ -2,6 +2,13 @@
 :tip-caption: 💡 TIP
 :warning-caption: ⚠️ WARNING
 
+[NOTE]
+====
+Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
+
+Use the `lab-ports` command at anytime to see your ports.
+====
+
 == 1. Debugging State Persistence
 
 After running the tests in Lab 2, notice that the `view_orders` service always returns an empty list, regardless of the POST requests we send. This indicates the service is **failing to store the order** in memory.
@@ -9,10 +16,6 @@ After running the tests in Lab 2, notice that the `view_orders` service always r
 NOTE: There is no need to stop any services other than the `order_service` at this point. A new version of the `order_service.py` file has been provided by the engineering team and is already in our `microservices` directory.
 
 === Updating the Order Service Code
-
-Before starting this lab, run `./tools/assign-lab-ports.sh`.
-
-Use the `lab-ports` command at anytime to see your ports.
 
 1.  **Go to the terminal (Terminal B)** where the **`order_service`** is currently running (on port ${ORDER_PORT}).
 2.  Use the **`CTRL+C`** key combination to halt the running service.
