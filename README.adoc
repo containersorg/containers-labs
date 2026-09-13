@@ -27,16 +27,17 @@ WARNING: Ensure you have terminated the monolithic application from Lab 1 (`CTRL
 
 === Verify Service Ports
 
+Before starting this lab, run `./tools/assign-lab-ports.sh`.
+
+Use the `lab-ports` command at anytime to see your ports.
+
 Change to the microservices directory and use `grep` to confirm that each file is configured to run on its designated port:
 
 [source,shell]
 ----
 $ cd microservices
 $ grep app.run *.py
-inventory_service.py:     app.run(port=5001)
-order_service.py:         app.run(port=5002)
-customer_service.py:      app.run(port=5003)
-billing_service.py:       app.run(port=5004)
+$ lab-ports
 ----
 
 === Launch All Services
@@ -66,13 +67,13 @@ We confirm that each service is completely independent and only responds to requ
 
 [source,shell]
 ----
-# TEST 1: Requesting Inventory data on the correct port (5001)
-$ curl http://127.0.0.1:5001/view_inventory
+# TEST 1: Requesting Inventory data on the correct port ${INVENTORY_PORT}
+$ curl http://127.0.0.1:${INVENTORY_PORT}/view_inventory
 {"inventory":{...}} 
 # Output: Success. Inventory data is returned.
 
 # TEST 2: Requesting Inventory data on the Order Service port (5002) (incorrect)
-$ curl http://127.0.0.1:5002/view_inventory
+$ curl http://127.0.0.1:${ORDER_PORT}/view_inventory
 <!doctype html>
 <html lang=en>
 <title>404 Not Found</title>
@@ -83,11 +84,11 @@ This confirms that the *deployment unit* is now tied to the *functional domain*,
 
 === Cross-Service Validation (Customer Management)
 
-We can access the Customer Management Service directly on port `5003`.
+We can access the Customer Management Service directly on port ${CUSTOMER_PORT}.
 
 [source,shell]
 ----
-$ curl http://127.0.0.1:5003/view_customer/customer_id_1
+$ curl http://127.0.0.1:${CUSTOMER_PORT}/view_customer/customer_id_1
 {
   "customer_details": {
     "address": "123 Main St",
@@ -95,7 +96,7 @@ $ curl http://127.0.0.1:5003/view_customer/customer_id_1
   }
 }
 
-$ curl http://127.0.0.1:5002/view_orders
+$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 
 {
   "orders": []
@@ -104,15 +105,15 @@ $ curl http://127.0.0.1:5002/view_orders
 
 === Placing an Order via API Call
 
-Order placement is managed by the Order Processing Service on port `5002`. This service is responsible for adding the transaction data.
+Order placement is managed by the Order Processing Service on port ${ORDER_PORT}. This service is responsible for adding the transaction data.
 
 [source,shell]
 ----
-# Place a new order using POST method, targeting port 5002
+# Place a new order using POST method, targeting port ${ORDER_PORT}
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
+    http://localhost:${ORDER_PORT}/place_order
 
 {
   "message": "Order placed successfully",
@@ -122,11 +123,11 @@ $ curl -X POST \
 
 === Final Order Verification
 
-Verify the order exists by querying the Order Processing Service on port `5002` again:
+Verify the order exists by querying the Order Processing Service on port ${ORDER_PORT} again:
 
 [source,shell]
 ----
-$ curl http://127.0.0.1:5002/view_orders
+$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 
 {
   "orders": [
