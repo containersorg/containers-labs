@@ -1,11 +1,13 @@
 """service for orders with value retention and inter-service communication"""
 from flask import Flask, json, request
 import requests 
+import os
 
 app = Flask(__name__)
 
 orders = []
-INVENTORY_API_URL = "http://127.0.0.1:5001" # URL for the inventory service
+#INVENTORY_API_URL = "http://127.0.0.1:5001" # URL for the inventory service
+INVENTORY_API_URL = "http://127.0.0.1:" + str(os.environ.get("INVENTORY_PORT", 5001))
 
 # Endpoint to place orders
 @app.route('/place_order', methods=['POST'])
@@ -46,4 +48,5 @@ def view_orders():
     return json.dumps({'orders': orders}, indent=4)
 
 if __name__ == '__main__':
-    app.run(port=5002)
+    # app.run(port=5002)
+    app.run(port=int(os.environ.get("ORDER_PORT", 5002)))

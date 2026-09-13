@@ -8,6 +8,10 @@ We will now use **Containerfiles** (sometimes called Dockerfiles) to automate th
 
 == The Declarative Approach
 
+Before starting this lab, run `./tools/assign-lab-ports.sh`.
+
+Use the `lab-ports` command at anytime to see your ports.
+
 Notice how each `Containerfile` is an automated replica of the manual steps we performed in Lab 3:
 
 1.  Installing dependencies (`RUN dnf install...`)
@@ -99,14 +103,14 @@ Use a free terminal to place and verify an order.
 
 [source,shell]
 ----
-# 1. Place a test order, targeting port 5002
+# 1. Place a test order, targeting port ${ORDER_PORT}
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
+    http://localhost:${ORDER_PORT}/place_order
 
 # 2. Verify the order exists by querying the Order Processing Service
-$ curl http://127.0.0.1:5002/view_orders
+$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 ----
 
 == 4. Terminating the Lab
