@@ -16,6 +16,10 @@ We will now commit a new image, `pharmacy:manual`, that contains *all* applicati
 
 === Verify Current Code State
 
+Before starting this lab, run `./tools/assign-lab-ports.sh`.
+
+Use the `lab-ports` command at anytime to see your ports.
+
 Select the running `inventory_service` container from Lab 4 and inspect its file list. (If it's not running, start it again with the same command as in Lab 4.)
 
 [source,shell]
@@ -110,7 +114,7 @@ b5bc1352919e  localhost/pharmacy:manual  python3 billing_s...  23 seconds ago  U
 
 === Final Application Test
 
-Use a free terminal to verify the Order Service (Port 5002) is running and can communicate with Inventory (Port 5001).
+Use a free terminal to verify the Order Service (Port ${ORDER_PORT}) is running and can communicate with Inventory (Port ${INVENTORY_PORT}).
 
 [source,shell]
 ----
@@ -118,10 +122,10 @@ Use a free terminal to verify the Order Service (Port 5002) is running and can c
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
+    http://localhost:${ORDER_PORT}/place_order
 
 # Verify the order exists
-$ curl http://127.0.0.1:5002/view_orders
+$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 ----
 
 == 4. Terminating the Lab

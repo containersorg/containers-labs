@@ -1,5 +1,6 @@
 """service for inventories"""
 from flask import Flask, json
+import os
 
 app = Flask(__name__)
 
@@ -15,4 +16,5 @@ def view_inventory():
     return json.dumps({'inventory': inventory}, indent=4)
 
 if __name__ == '__main__':
-    app.run(port=5001)
+    # app.run(port=5001)
+    app.run(port=int(os.environ.get("INVENTORY_PORT", 5001)))
