@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 orders = []
 #INVENTORY_API_URL = "http://127.0.0.1:5001" # URL for the inventory service
-INVENTORY_API_URL = "http://127.0.0.1:" + str(os.environ.get("INVENTORY_PORT", 5001))
+INVENTORY_API_URL = f"http://127.0.0.1:{os.environ.get('INVENTORY_PORT', 5001)}"
 
 # Endpoint to place orders
 @app.route('/place_order', methods=['POST'])
