@@ -2,6 +2,13 @@
 :tip-caption: 💡 TIP
 :warning-caption: ⚠️ WARNING
 
+[NOTE]
+====
+Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
+
+Use the `lab-ports` command at anytime to see your ports.
+====
+
 We have advanced significantly in the creation of our application, but we are still handling deployment manually. Manually running four containers with complex flags (`--network`, `-p`, `-v`) is tedious and prone to error.
 
 To automate the entire application stack deployment and lifecycle, we will use **Compose** (via `podman-compose` or `docker-compose`).
