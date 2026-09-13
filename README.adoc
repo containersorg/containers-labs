@@ -57,13 +57,13 @@ Verify connectivity and the complex workflow (Order $\rightarrow$ Inventory) is 
 [source,shell]
 ----
 # 1. Test external access (Inventory Service 5001)
-$ curl http://127.0.0.1:5001/view_inventory
+$ curl http://127.0.0.1:{INVENTORY_PORT}/view_inventory
 
-# 2. Place an order via port 5002 (Tests persistence and inter-service communication)
+# 2. Place an order via port {ORDER_PORT} (Tests persistence and inter-service communication)
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:5002/place_order
+    http://localhost:{ORDER_PORT}/place_order
 ----
 
 === Bring Services Down and Clean Up

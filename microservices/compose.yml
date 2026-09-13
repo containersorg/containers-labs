@@ -16,7 +16,7 @@ services:
     deploy:
       replicas: 1
     ports:
-      - ${BILLING_PORT}:5004
+      - ${BILLING_PORT:-5004}:5004
     command: billing_service.py
     networks:
       - pharmacy
@@ -27,7 +27,7 @@ services:
     deploy:
       replicas: 1
     ports:
-      - ${CUSTOMER_PORT}:5003
+      - ${CUSTOMER_PORT:-5003}:5003
     command: customer_service.py
     networks:
       - pharmacy
@@ -38,7 +38,7 @@ services:
     deploy:
       replicas: 1
     ports:
-      - ${INVENTORY_PORT}:5001
+      - ${INVENTORY_PORT:-5001}:5001
     command: inventory_service.py
     networks:
       - pharmacy
@@ -49,7 +49,7 @@ services:
     deploy:
       replicas: 1
     ports:
-      - ${ORDER_PORT}:5002
+      - ${ORDER_PORT:-5002}:5002
     command: order_service.py
     networks:
       - pharmacy
