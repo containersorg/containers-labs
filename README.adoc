@@ -47,7 +47,7 @@ Also the URL endpoint for inter-service communication has been updated to use th
 
 [source,python]
 ----
-INVENTORY_API_URL = "http://inventory_service:${ORDER_PORT}"
+INVENTORY_API_URL = "http://inventory_service:5001"
 ----
 
 === Rebuild the Final Image
