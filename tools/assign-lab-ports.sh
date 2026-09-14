@@ -29,10 +29,10 @@ BILLING_PORT=$((5004 + ${OFFSET}))
 # NODE_ORDER_PORT=$((30002 + ${OFFSET}))
 
 # For host-network labs (lab-08 and earlier inter-service calls)
-INVENTORY_API_URL="http://127.0.0.1:${INVENTORY_PORT}"
+INVENTORY_API_URL="http://127.0.0.1:\${INVENTORY_PORT}"
 
 # For bridge network labs (lab-09 and later inter-service calls)
-INVENTORY_API_URL_BRIDGE="http://inventory_service:${INVENTORY_PORT}"
+INVENTORY_API_URL_BRIDGE="http://inventory_service:\${INVENTORY_PORT}"
 EOF
 
 # Verify if ~./bashrc already has the source command for the containers-labs.env file
@@ -40,7 +40,7 @@ if ! grep -q "source ~/.containers-labs.env" ~/.bashrc; then
   echo "
   set -a
   source ~/.containers-labs.env
-  lab-ports() { echo "Your ports: monolithic='${MONO_PORT}' inventory='${INVENTORY_PORT}' order='${ORDER_PORT}' customer='${CUSTOMER_PORT}' billing='${BILLING_PORT}'"; }
+  lab-ports() { echo "Your ports: monolithic='$MONO_PORT' inventory='$INVENTORY_PORT' order='$ORDER_PORT' customer='$CUSTOMER_PORT' billing='$BILLING_PORT'"; }
   set +a
   " >> ~/.bashrc
 fi
