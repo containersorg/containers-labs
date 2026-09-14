@@ -76,7 +76,7 @@ $ curl http://127.0.0.1:${INVENTORY_PORT}/view_inventory
 {"inventory":{...}} 
 # Output: Success. Inventory data is returned.
 
-# TEST 2: Requesting Inventory data on the Order Service port {ORDER_PORT} (incorrect)
+# TEST 2: Requesting Inventory data on the Order Service port ${ORDER_PORT} (incorrect)
 $ curl http://127.0.0.1:${ORDER_PORT}/view_inventory
 <!doctype html>
 <html lang=en>
@@ -144,6 +144,6 @@ $ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 
 == 4. Conclusion: Independent Scaling and Resilience
 
-In this microservices model, if the **Inventory Management Service {INVENTORY_PORT}** fails, the **Order Processing Service {ORDER_PORT}** and the **Customer Management Service {CUSTOMER_PORT}** would remain running, allowing partial functionality to continue.
+In this microservices model, if the **Inventory Management Service ${INVENTORY_PORT}** fails, the **Order Processing Service ${ORDER_PORT}** and the **Customer Management Service $    {CUSTOMER_PORT}** would remain running, allowing partial functionality to continue.
 
 This architecture naturally leads to containerization, as it provides a clean way to package each isolated service with its specific dependencies and manage its lifecycle independently. 
