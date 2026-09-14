@@ -83,7 +83,7 @@ We will add a health check to the `inventory_service` container. The health chec
 [source,shell]
 ----
 $ podman rm -f inventory_service
-$ podman run --name inventory_service --network pharmacy -p 5001:5001 \
+$ podman run --name inventory_service --network pharmacy -p ${INVENTORY_PORT}:5001 \
     --health-cmd='curl http://0.0.0.0:5001/view_inventory || exit 1' \
     --health-interval=10s -d localhost/pharmacy:v5 inventory_service.py
 ----
@@ -117,7 +117,7 @@ Let's explore a few other health options while simulating a failure by using the
 [source,shell]
 ----
 $ podman rm -f inventory_service
-$ podman run --name inventory_service --network pharmacy -p 5001:5001 \
+$ podman run --name inventory_service --network pharmacy -p ${INVENTORY_PORT}:5001 \
     --health-cmd='curl http://0.0.0.0:5001/view_inventory || exit 1' \
     --health-interval=10s \
     --health-retries=1 \
