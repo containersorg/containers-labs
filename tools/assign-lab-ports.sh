@@ -54,4 +54,6 @@ lab-ports()
 EOF
 fi
 
-source ${CONFIG}
+echo "Ensure you reload your environment by running the following commands:"
+echo "source ${CONFIG}"
+echo "source ~/.bashrc"
