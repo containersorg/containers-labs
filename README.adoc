@@ -18,10 +18,6 @@ NOTE: The `monolithic` directory hosts our application files for this lab.
 
 === Application Pre-requisites (Host Installation)
 
-Before starting this lab, run `./tools/assign-lab-ports.sh`.
-
-Use the `lab-ports` command at anytime to see your ports.
-
 Given that our pharmacy application is developed in `Python` using the `FLASK` framework, we must manually install all dependencies directly onto our host system.
 
 [source,shell]
@@ -50,7 +46,7 @@ Run the application with the following command from the `monolithic` directory:
 ----
 $ cd monolithic
 $ python3 pharmacy.py
- * Running on http://127.0.0.1:${MONO_PORT} (Press CTRL+C to quit)
+ * Running on http://127.0.0.1:5000 (Press CTRL+C to quit)
 ----
 
 While the application runs, notice that the Flask debugger currently occupies your terminal. Consequently, **open a new terminal window** (Terminal B) to test the application through direct API calls.
@@ -59,7 +55,7 @@ image::images/mono.png[200,200,align=center]
 
 == 4. Testing the Monolithic API
 
-The Flask web application is now operational and accessible via the loopback address (`127.0.0.1`) on port ${MONO_PORT}. We will use `CURL` to verify the application endpoints.
+The Flask web application is now operational and accessible via the loopback address (`127.0.0.1`) on port `5000`. We will use `CURL` to verify the application endpoints.
 
 TIP: All API calls are directed to the *same* application on the *same* port, reflecting the monolithic structure.
 
@@ -70,7 +66,7 @@ Initiate the testing phase with a straightforward direct call to verify connecti
 [source,shell]
 ----
 # Run this command in Terminal B
-$ curl http://127.0.0.1:${MONO_PORT}
+$ curl http://127.0.0.1:5000
 Pharmacy v1
 ----
 
@@ -83,10 +79,10 @@ Now, verify the inventory, orders, and customer details, noting that all data li
 [source,shell]
 ----
 # Verify the hardcoded inventory data
-$ curl http://127.0.0.1:${MONO_PORT}/view_inventory
+$ curl http://127.0.0.1:5000/view_inventory
 
 # Retrieve John Doe's customer details
-$ curl http://127.0.0.1:${MONO_PORT}/view_customer/customer_id_1
+$ curl http://127.0.0.1:5000/view_customer/customer_id_1
 ----
 
 === Place a New Order (POST Request)
@@ -96,13 +92,13 @@ Since order placement modifies data, it requires the HTTP POST method and the co
 [source,shell]
 ----
 # 1. Check existing orders (should be empty array: [])
-$ curl http://127.0.0.1:${MONO_PORT}/view_orders
+$ curl http://127.0.0.1:5000/view_orders
 
 # 2. Place a new order using POST method
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:${MONO_PORT}/place_order
+    http://localhost:5000/place_order
 ----
 
 === Verify the Order Status
@@ -111,7 +107,7 @@ Finally, confirm that the order was successfully added and persisted within the 
 
 [source,shell]
 ----
-$ curl http://127.0.0.1:${MONO_PORT}/view_orders
+$ curl http://127.0.0.1:5000/view_orders
 {
   "orders": [
     {
@@ -131,6 +127,6 @@ image::mono-servers.png[600,600,align=center]
 
 == 6. Terminating the Application
 
-WARNING: Before continuing to the next lab, you **must** terminate the monolithic application running on port ${MONO_PORT}.
+WARNING: Before continuing to the next lab, you **must** terminate the monolithic application running on port `5000`.
 
 Use the (`CTRL+C`) key combination in the first opened terminal (Terminal A) where the Flask application is currently attached.
