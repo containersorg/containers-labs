@@ -10,13 +10,6 @@ This process is highly recommended because it:
 .  **Simplifies Updates:** To patch Python, you only rebuild one image, not four.
 .  **Encapsulates Code:** All application source code lives in a single, version-controlled unit.
 
-[NOTE]
-====
-Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
-
-Use the `lab-ports` command at anytime to see your ports.
-====
-
 == 1. Consolidating Source Code and Dependencies
 
 We will now commit a new image, `pharmacy:manual`, that contains *all* application source code.
@@ -95,10 +88,10 @@ We will now run all services again, but every container will be instantiated fro
 
 [source,shell]
 ----
-$ podman run --name inventory_service --network host --env-file ~/.containers-labs.env -d localhost/inventory_image:manual python3 inventory_service.py
-$ podman run --name customer_service --network host --env-file ~/.containers-labs.env -d localhost/customer_image:manual python3 customer_service.py
-$ podman run --name billing_service --network host --env-file ~/.containers-labs.env -d localhost/billing_image:manual python3 billing_service.py
-$ podman run --name order_service --network host --env-file ~/.containers-labs.env -d localhost/order_image:manual python3 order_service.py
+$ podman run --rm --name inventory_service --network host -d localhost/pharmacy:manual python3 inventory_service.py
+$ podman run --rm --name order_service --network host -d localhost/pharmacy:manual python3 order_service.py
+$ podman run --rm --name customer_service --network host -d localhost/pharmacy:manual python3 customer_service.py
+$ podman run --rm --name billing_service --network host -d localhost/pharmacy:manual python3 billing_service.py
 ----
 
 Notice that now, with a **single image**, we are running all four services, which is much more efficient and easier to manage in a registry.
@@ -117,7 +110,7 @@ b5bc1352919e  localhost/pharmacy:manual  python3 billing_s...  23 seconds ago  U
 
 === Final Application Test
 
-Use a free terminal to verify the Order Service (Port ${ORDER_PORT}) is running and can communicate with Inventory (Port ${INVENTORY_PORT}).
+Use a free terminal to verify the Order Service (Port 5002) is running and can communicate with Inventory (Port 5001).
 
 [source,shell]
 ----
@@ -125,10 +118,10 @@ Use a free terminal to verify the Order Service (Port ${ORDER_PORT}) is running 
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:${ORDER_PORT}/place_order
+    http://localhost:5002/place_order
 
 # Verify the order exists
-$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
+$ curl http://127.0.0.1:5002/view_orders
 ----
 
 == 4. Terminating the Lab
