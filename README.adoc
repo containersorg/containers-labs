@@ -10,7 +10,7 @@ Each container will be treated as a new, minimal Linux server. All dependencies 
 
 IMPORTANT: Be sure all previously executed services from Lab 2 are stopped by closing the four terminals where the services were running.
 
-=== Create and Run Containers
+== 1. Create and Run Containers
 
 Open a terminal and execute the following commands to create the four service containers:
 
@@ -33,7 +33,7 @@ $ podman run --name billing_service --network host -dti fedora /bin/bash
 A Note on Container Networking: We use the *Host Network Mode* (`--network host`) in these commands. This flag disables network isolation, meaning a service running on port 5001 inside a container is identical to a service running on port 5001 on the host itself. This simplifies cross-container communication for this lab.
 ====
 
-== Verify Running Containers
+=== Verify Running Containers
 
 Execute `podman ps` to confirm all four containers are running the `/bin/bash` shell:
 
