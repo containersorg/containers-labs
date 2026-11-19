@@ -1,6 +1,5 @@
 """Service for customers"""
 from flask import Flask, json
-import os
 
 app = Flask(__name__)
 
@@ -19,5 +18,4 @@ def view_customer(customer_id):
     return json.dumps({'customer_details': customers[customer_id]}, indent=4)
 
 if __name__ == '__main__':
-    # app.run(port=5003)
-    app.run(port=int(os.environ.get("CUSTOMER_PORT", 5003)))
+    app.run(port=5003)
