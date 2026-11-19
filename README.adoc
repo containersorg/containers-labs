@@ -2,13 +2,6 @@
 :tip-caption: 💡 TIP
 :warning-caption: ⚠️ WARNING
 
-[NOTE]
-====
-Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
-
-Use the `lab-ports` command at anytime to see your ports.
-====
-
 We have advanced significantly in the creation of our application, but we are still handling deployment manually. Manually running four containers with complex flags (`--network`, `-p`, `-v`) is tedious and prone to error.
 
 To automate the entire application stack deployment and lifecycle, we will use **Compose** (via `podman-compose` or `docker-compose`).
@@ -63,14 +56,14 @@ Verify connectivity and the complex workflow (Order $\rightarrow$ Inventory) is 
 
 [source,shell]
 ----
-# 1. Test external access (Inventory Service ${INVENTORY_PORT})
-$ curl http://127.0.0.1:${INVENTORY_PORT}/view_inventory
+# 1. Test external access (Inventory Service 5001)
+$ curl http://127.0.0.1:5001/view_inventory
 
-# 2. Place an order via port ${ORDER_PORT} (Tests persistence and inter-service communication)
+# 2. Place an order via port 5002 (Tests persistence and inter-service communication)
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:${ORDER_PORT}/place_order
+    http://localhost:5002/place_order
 ----
 
 === Bring Services Down and Clean Up
