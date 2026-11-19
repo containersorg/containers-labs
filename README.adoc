@@ -6,13 +6,6 @@ Up to this point, our approach has been implemented *manually*. This is not effi
 
 We will now use **Containerfiles** (sometimes called Dockerfiles) to automate the entire process. A Containerfile is a text file containing declarative instructions for building an image.
 
-[NOTE]
-====
-Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
-
-Use the `lab-ports` command at anytime to see your ports.
-====
-
 == The Declarative Approach
 
 Notice how each `Containerfile` is an automated replica of the manual steps we performed in Lab 3:
@@ -70,7 +63,7 @@ Since we defined a `CMD` instruction in each `Containerfile`, we no longer need 
 
 === Stop Previous Containers
 
-WARNING: Ensure the containers from Lab 5 are stopped to free up ports ${INVENTORY_PORT}-${ORDER_PORT}.
+WARNING: Ensure the containers from Lab 5 are stopped to free up ports 5001-5004.
 
 [source,shell]
 ----
@@ -83,10 +76,10 @@ Run all four containers using the images we just built. The `podman run` command
 
 [source,shell]
 ----
-$ podman run --name inventory_service --network host --env-file ~/.containers-labs.env -d localhost/inventory_image:manual python3 inventory_service.py
-$ podman run --name customer_service --network host --env-file ~/.containers-labs.env -d localhost/customer_image:manual python3 customer_service.py
-$ podman run --name billing_service --network host --env-file ~/.containers-labs.env -d localhost/billing_image:manual python3 billing_service.py
-$ podman run --name order_service --network host --env-file ~/.containers-labs.env -d localhost/order_image:manual python3 order_service.py
+$ podman run --name inventory_service --network host -d localhost/inventory-service
+$ podman run --name order_service --network host -d localhost/order-service
+$ podman run --name customer_service --network host -d localhost/customer-service
+$ podman run --name billing_service --network host -d localhost/billing-service
 ----
 
 Verify that all four services are running:
@@ -106,14 +99,14 @@ Use a free terminal to place and verify an order.
 
 [source,shell]
 ----
-# 1. Place a test order, targeting port ${ORDER_PORT}
+# 1. Place a test order, targeting port 5002
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:${ORDER_PORT}/place_order
+    http://localhost:5002/place_order
 
 # 2. Verify the order exists by querying the Order Processing Service
-$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
+$ curl http://127.0.0.1:5002/view_orders
 ----
 
 == 4. Terminating the Lab
