@@ -8,13 +8,6 @@ To achieve this, the `order_service.py` has been modified to store orders in a f
 
 This persistence mechanism relies on three steps: read existing orders from the file, update orders, and write changes back to the file.
 
-[NOTE]
-====
-Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
-
-Use the `lab-ports` command at anytime to see your ports.
-====
-  
 == 1. Debugging the Missing Directory
 
 Since we have new code, we need to rebuild the images and create new containers.
@@ -31,10 +24,10 @@ $ podman build -t pharmacy:v3 .
 $ podman rm -f inventory_service customer_service billing_service order_service
 
 # Run all four services using the new image
-$ podman run --name inventory_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v3 inventory_service.py
-$ podman run --name customer_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v3 customer_service.py
-$ podman run --name billing_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v3 billing_service.py
-$ podman run --name order_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v3 order_service.py
+$ podman run --name order_service --network host -d localhost/pharmacy:v3 order_service.py
+$ podman run --name inventory_service --network host -d localhost/pharmacy:v3 inventory_service.py
+$ podman run --name customer_service --network host -d localhost/pharmacy:v3 customer_service.py
+$ podman run --name billing_service --network host -d localhost/pharmacy:v3 billing_service.py
 ----
 
 We check the container status:
@@ -94,7 +87,7 @@ $ podman build -t pharmacy:v4 .
 $ podman rm -f order_service
 
 # Relaunch the order_service container
-$ podman run --name order_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v4 order_service.py
+$ podman run --name order_service --network host -d localhost/pharmacy:v4 order_service.py
 ---
 
 Verify all four services are running:
@@ -115,11 +108,11 @@ The service should now be running. Let's test the service by placing an order.
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:${ORDER_PORT}/place_order
+    http://localhost:5002/place_order
 
   # 2. Verify the order was successfully added and read back
 
-$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
+$ curl http://127.0.0.1:5002/view_orders
 
   # 3. Check the file inside the container's filesystem
 
@@ -140,7 +133,7 @@ What if something happens to the container? Let's stop --> remove --> restart --
 ----
 $ podman stop order_service
 $ podman rm order_service
-$ podman run --name order_service --network host --env-file ~/.containers-labs.env -d localhost/pharmacy:v4 order_service.py
+$ podman run --name order_service --network host -d localhost/pharmacy:v4 order_service.py
 $ podman exec -ti order_service cat /data/orders.json
 ----
 
@@ -176,7 +169,6 @@ $ podman stop order_service
 $ podman rm order_service
 $ podman run --rm -d --name order_service --network host \
     -v pharmacy_orders_data:/data:rw \
-    --env-file ~/.containers-labs.env \
     localhost/pharmacy:v4 order_service.py
 ----
 
@@ -191,11 +183,11 @@ Place one new order and then stop the container to prove the data persists exter
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_2", "medicine": "medicine_B", "quantity": 10}' \
-    http://localhost:${ORDER_PORT}/place_order
+    http://localhost:5002/place_order
 
   # 2. Verify the order was successfully added and read back
 
-$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
+$ curl http://127.0.0.1:5002/view_orders
 
   # 3. Check the file inside the container's filesystem
 
