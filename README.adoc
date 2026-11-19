@@ -1,12 +1,5 @@
 = Lab 2 - Microservices Architecture
 
-[NOTE]
-====
-Before starting this lab, run `./tools/assign-lab-ports.sh` from the root of this repository.
-
-Use the `lab-ports` command at anytime to see your ports.
-====
-
 == 1. Decomposing the Monolith
 
 To transition from the monolithic application, we segment functionalities into **four distinct Flask applications**, each representing a separate service domain. This allows for independent development, deployment, and scaling.
@@ -20,10 +13,10 @@ image::images/micro.png[400,400,align=center]
 [%header,cols="2,3,^1,1",align="center",stripes="even",width="100%"]
 |===
 ^| Service              ^| Responsibility                                                   ^| Port     ^| File
-| Inventory Management  | Handles all operations related to inventory stock and pricing.    | `${INVENTORY_PORT}`    | `inventory_service.py`
-| Order Processing      | Oversees order placement and tracking.                            | `${ORDER_PORT}`    | `order_service.py`
-| Customer Management   | Dedicated to handling customer information and details.           | `${CUSTOMER_PORT}`    | `customer_service.py`
-| Billing Service       | Responsible for managing billing and payment processes.           | `${BILLING_PORT}`    | `billing_service.py`
+| Inventory Management  | Handles all operations related to inventory stock and pricing.    | `5001`    | `inventory_service.py`
+| Order Processing      | Oversees order placement and tracking.                            | `5002`    | `order_service.py`
+| Customer Management   | Dedicated to handling customer information and details.           | `5003`    | `customer_service.py`
+| Billing Service       | Responsible for managing billing and payment processes.           | `5004`    | `billing_service.py`
 |===
 
 == 2. Starting the Services Independently
@@ -34,14 +27,16 @@ WARNING: Ensure you have terminated the monolithic application from Lab 1 (`CTRL
 
 === Verify Service Ports
 
-
 Change to the microservices directory and use `grep` to confirm that each file is configured to run on its designated port:
 
 [source,shell]
 ----
 $ cd microservices
 $ grep app.run *.py
-$ lab-ports
+inventory_service.py:     app.run(port=5001)
+order_service.py:         app.run(port=5002)
+customer_service.py:      app.run(port=5003)
+billing_service.py:       app.run(port=5004)
 ----
 
 === Launch All Services
@@ -71,13 +66,13 @@ We confirm that each service is completely independent and only responds to requ
 
 [source,shell]
 ----
-# TEST 1: Requesting Inventory data on the correct port ${INVENTORY_PORT}
-$ curl http://127.0.0.1:${INVENTORY_PORT}/view_inventory
+# TEST 1: Requesting Inventory data on the correct port (5001)
+$ curl http://127.0.0.1:5001/view_inventory
 {"inventory":{...}} 
 # Output: Success. Inventory data is returned.
 
-# TEST 2: Requesting Inventory data on the Order Service port ${ORDER_PORT} (incorrect)
-$ curl http://127.0.0.1:${ORDER_PORT}/view_inventory
+# TEST 2: Requesting Inventory data on the Order Service port (5002) (incorrect)
+$ curl http://127.0.0.1:5002/view_inventory
 <!doctype html>
 <html lang=en>
 <title>404 Not Found</title>
@@ -88,11 +83,11 @@ This confirms that the *deployment unit* is now tied to the *functional domain*,
 
 === Cross-Service Validation (Customer Management)
 
-We can access the Customer Management Service directly on port ${CUSTOMER_PORT}.
+We can access the Customer Management Service directly on port `5003`.
 
 [source,shell]
 ----
-$ curl http://127.0.0.1:${CUSTOMER_PORT}/view_customer/customer_id_1
+$ curl http://127.0.0.1:5003/view_customer/customer_id_1
 {
   "customer_details": {
     "address": "123 Main St",
@@ -100,7 +95,7 @@ $ curl http://127.0.0.1:${CUSTOMER_PORT}/view_customer/customer_id_1
   }
 }
 
-$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
+$ curl http://127.0.0.1:5002/view_orders
 
 {
   "orders": []
@@ -109,15 +104,15 @@ $ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 
 === Placing an Order via API Call
 
-Order placement is managed by the Order Processing Service on port ${ORDER_PORT}. This service is responsible for adding the transaction data.
+Order placement is managed by the Order Processing Service on port `5002`. This service is responsible for adding the transaction data.
 
 [source,shell]
 ----
-# Place a new order using POST method, targeting port ${ORDER_PORT}
+# Place a new order using POST method, targeting port 5002
 $ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"customer_id": "customer_id_1", "medicine": "medicine_A", "quantity": 5}' \
-    http://localhost:${ORDER_PORT}/place_order
+    http://localhost:5002/place_order
 
 {
   "message": "Order placed successfully",
@@ -127,11 +122,11 @@ $ curl -X POST \
 
 === Final Order Verification
 
-Verify the order exists by querying the Order Processing Service on port ${ORDER_PORT} again:
+Verify the order exists by querying the Order Processing Service on port `5002` again:
 
 [source,shell]
 ----
-$ curl http://127.0.0.1:${ORDER_PORT}/view_orders
+$ curl http://127.0.0.1:5002/view_orders
 
 {
   "orders": [
@@ -144,6 +139,6 @@ $ curl http://127.0.0.1:${ORDER_PORT}/view_orders
 
 == 4. Conclusion: Independent Scaling and Resilience
 
-In this microservices model, if the **Inventory Management Service ${INVENTORY_PORT}** fails, the **Order Processing Service ${ORDER_PORT}** and the **Customer Management Service $    {CUSTOMER_PORT}** would remain running, allowing partial functionality to continue.
+In this microservices model, if the **Inventory Management Service (5001)** fails, the **Order Processing Service (5002)** and the **Customer Management Service (5003)** would remain running, allowing partial functionality to continue.
 
 This architecture naturally leads to containerization, as it provides a clean way to package each isolated service with its specific dependencies and manage its lifecycle independently. 
